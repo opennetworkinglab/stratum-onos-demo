@@ -1,0 +1,12 @@
+[
+    {
+        "ptf_port": 0,
+        "p4_port": 0,
+        "iface_name": "ens6f0"
+    },
+    {
+        "ptf_port": 1,
+        "p4_port": 1,
+        "iface_name": "ens6f1"
+    }
+]
