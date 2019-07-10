@@ -5,8 +5,7 @@ build_dir := ${current_dir}/build
 docker_run := docker run --rm -v ${current_dir}:${current_dir} -w ${current_dir}
 
 p4c_bmv2_img := opennetworking/p4c:stable
-bmv2_pp_flags := -D__TARGET_BMV2
-p4c_bm2_ss := ${docker_run} ${p4c_bmv2_img} p4c-bm2-ss --arch v1model ${bmv2_pp_flags}
+p4c_bm2_ss := ${docker_run} ${p4c_bmv2_img} p4c-bm2-ss --arch v1model
 
 
 bmv2: bmv2-pp
