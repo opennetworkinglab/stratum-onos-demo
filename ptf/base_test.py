@@ -543,6 +543,21 @@ class P4RuntimeTest(BaseTest):
         self.push_update_set_group_membership(req, ap_name, grp_id, mbr_ids)
         return req, self.write_request(req, store=False)
 
+    def add_clone_session(self, clone_id, ports):
+        req = self._get_new_write_request()
+        update = req.updates.add()
+        update.type = p4runtime_pb2.Update.INSERT
+        pre_entry = update.entity.packet_replication_engine_entry
+        clone_entry = pre_entry.clone_session_entry
+        clone_entry.session_id = clone_id
+        clone_entry.class_of_service = 0
+        clone_entry.packet_length_bytes = 0
+        for port in ports:
+            replica = clone_entry.replicas.add()
+            replica.egress_port = port
+            replica.instance = 1
+        return req, self.write_request(req)
+
     #
     # for all add_entry function, use mk == None for default entry
     #

@@ -48,6 +48,7 @@ class ConfiguredTest(P4RuntimeTest):
         self.host_port_b = self.swports(1) # 34 on switch
         self.switch_port_a = stringify(35, 2)
         self.switch_port_b = stringify(34, 2)
+        self.switch_port_loopback = stringify(13, 2)
         self.host_port_a_mac = mac_to_binary("3c:fd:fe:a8:ea:30")
         self.host_port_b_mac = mac_to_binary("3c:fd:fe:a8:ea:31")
         self.switch_port_a_mac = mac_to_binary("00:00:00:aa:aa:aa")
@@ -643,3 +644,107 @@ class PacketIoOutSpamTest(ConfiguredTest):
             self.send_packet_out(pkt_out)
             testutils.verify_no_other_packets(self)
             recv_pkt = self.get_packet_in()
+
+
+class CloneSessionTest(ConfiguredTest):
+    """
+    TODO
+    Canonical way to create a clone session.
+
+    Not supported by bcm
+    """
+    @autocleanup
+    def runTestDISABLED(self):
+        pkt = testutils.simple_ip_packet(
+            pktlen=60, eth_src=self.host_port_a_mac, eth_dst=self.switch_port_a_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=64)
+        exp_pkt = testutils.simple_ip_packet(
+            pktlen=60, eth_src=self.switch_port_b_mac, eth_dst=self.host_port_b_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=63)
+
+        # Direct Tx to loopback port
+        pkt_out = p4runtime_pb2.PacketOut()
+        pkt_out.payload = str(pkt)
+        egress_physical_port = pkt_out.metadata.add()
+        egress_physical_port.metadata_id = 1
+        egress_physical_port.value = stringify(13, 2)
+
+        self.add_clone_session(511, [34])
+
+
+class EcmpTest(ConfiguredTest):
+    """
+    TODO
+    Create ECMP routes & nexthops and send packets over them.
+    """
+    @autocleanup
+    def runTest(self):
+        # Admit L2 packets with router MACs
+        self.send_request_add_entry_to_action(
+            "ingress.l3_fwd.l3_routing_classifier_table",
+            [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
+            "ingress.l3_fwd.set_l3_admit",
+            []
+        )
+        self.send_request_add_entry_to_action(
+            "ingress.l3_fwd.l3_routing_classifier_table",
+            [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_b_mac, "\xff\xff\xff\xff\xff\xff")],
+            "ingress.l3_fwd.set_l3_admit",
+            []
+        )
+        # Create non-multipath nhops
+        self.send_request_add_member(
+            "ingress.l3_fwd.wcmp_action_profile",
+            1,  # nhop id
+            "ingress.l3_fwd.set_nexthop",
+            [("port", self.switch_port_a), ("smac", self.switch_port_a_mac), ("dmac", self.host_port_a_mac), ("dst_vlan", stringify(1, 2))]
+        )
+        self.send_request_add_member(
+            "ingress.l3_fwd.wcmp_action_profile",
+            2,  # nhop id
+            "ingress.l3_fwd.set_nexthop",
+            [("port", self.switch_port_b), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
+        )
+
+        # Create ECMP group
+        self.send_request_add_group(
+            "ingress.l3_fwd.wcmp_action_profile",
+            1,   # group id
+            128, # max members
+            [1, 2]  # nhop members
+        )
+
+        # Create L3 forwarding rule to ECMP group
+        self.send_request_add_entry_to_group(
+            "ingress.l3_fwd.l3_fwd_table",
+            [self.Exact("local_metadata.vrf_id", stringify(0, 2)), self.Lpm("hdr.ipv4_base.dst_addr", self.ip_host_b_str, 16)],
+            1  # group id
+        )
+
+        hits = {}
+
+        for i in range(50):
+            ip_src = self.ip_host_a[:-1] + str(i*2)
+            pkt = testutils.simple_ip_packet(
+                pktlen=60, eth_src=self.host_port_a_mac, eth_dst=self.switch_port_b_mac,
+                ip_src=ip_src, ip_dst=self.ip_host_b, ip_ttl=64)
+            exp_pkt_on_a = testutils.simple_ip_packet(
+                pktlen=60, eth_src=self.switch_port_a_mac, eth_dst=self.host_port_a_mac,
+                ip_src=ip_src, ip_dst=self.ip_host_b, ip_ttl=63)
+            exp_pkt_on_b = testutils.simple_ip_packet(
+                pktlen=60, eth_src=self.switch_port_b_mac, eth_dst=self.host_port_b_mac,
+                ip_src=ip_src, ip_dst=self.ip_host_b, ip_ttl=63)
+
+            # Direct Tx to loopback port
+            pkt_out = p4runtime_pb2.PacketOut()
+            pkt_out.payload = str(pkt)
+            egress_physical_port = pkt_out.metadata.add()
+            egress_physical_port.metadata_id = 1
+            egress_physical_port.value = self.switch_port_loopback
+            self.send_packet_out(pkt_out)
+
+            hit_port = testutils.verify_any_packet_any_port(self, [exp_pkt_on_a, exp_pkt_on_b], [self.host_port_a, self.host_port_b])
+            hits[hit_port] = True
+
+        if not hits[self.host_port_a]:
+            self.fail("Port A never hit")
+        if not hits[self.host_port_b]:
+            self.fail("Port B never hit")
