@@ -98,7 +98,9 @@ control l3_fwd(inout parsed_packet_t hdr,
                 inout standard_metadata_t standard_metadata) {
   action nop() { }
 
-  action drop() { mark_to_drop(); }
+  action drop() {
+      mark_to_drop(standard_metadata);
+  }
 
   @proto_package("l3_admit")
   action set_l3_admit() {
