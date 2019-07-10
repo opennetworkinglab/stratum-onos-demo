@@ -1,0 +1,29 @@
+version: "3"
+
+services:
+  mininet:
+    build:
+      context: .
+    container_name: 'mininet'
+    hostname: 'mininet'
+    privileged: true
+    ports:
+      - "50001:50001"
+      - "50002:50002"
+      - "50003:50003"
+      - "50004:50004"
+    volumes:
+      - ./tmp:/tmp
+  onos:
+    image: onosproject/onos:latest
+    container_name: 'onos'
+    hostname: 'onos'
+    depends_on:
+      - mininet
+    ports:
+      - "8181:8181" # GUI
+      - "8101:8101" # CLI
+    environment:
+      - ONOS_APPS=gui,drivers.bmv2,lldpprovider,hostprovider
+    links:
+      - mininet
