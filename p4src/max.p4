@@ -99,12 +99,7 @@ control l3_fwd(inout parsed_packet_t hdr,
   action nop() { }
 
   action drop() {
-      // FIXME: Remove ifdef once p4c dep is updated in Stratum
-      #ifdef __TARGET_BMV2
       mark_to_drop(standard_metadata);
-      #else
-      mark_to_drop();
-      #endif
   }
 
   @proto_package("l3_admit")
