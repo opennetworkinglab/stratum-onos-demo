@@ -179,7 +179,7 @@ class PktIoOutToIngressPipelineL3ForwardingTest(ConfiguredTest):
     Currently broken
     """
     @autocleanup
-    def runTestDISABLED(self):
+    def runTestTempDISABLED(self):
         # Admit L2 packets with router MACs
         self.send_request_add_entry_to_action(
             "ingress.l3_fwd.l3_routing_classifier_table",
@@ -301,6 +301,56 @@ class PacketIoOutDirectLoopbackL3ForwardingTest(ConfiguredTest):
         egress_physical_port.value = stringify(13, 2)
         self.send_packet_out(pkt_out)
         testutils.verify_packets(self, exp_pkt, [self.host_port_b])
+
+
+class PacketIoOutDirectLoopbackCloneToCpuTest(ConfiguredTest):
+    """
+    Send a packet directly to loopback port, L3 forward it to
+    a dataplane port and clone a copy to CPU.
+    """
+    @autocleanup
+    def runTest(self):
+        self.send_request_add_entry_to_action(
+            "ingress.l3_fwd.l3_routing_classifier_table",
+            [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
+            "ingress.l3_fwd.set_l3_admit",
+            []
+        )
+        # Create rules to forward to port B
+        self.send_request_add_member(
+            "ingress.l3_fwd.wcmp_action_profile",
+            1,
+            "ingress.l3_fwd.set_nexthop",
+            [("port", self.switch_port_b), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
+        )
+        self.send_request_add_entry_to_member(
+            "ingress.l3_fwd.l3_fwd_table",
+            [self.Exact("local_metadata.vrf_id", stringify(0, 2)), self.Lpm("hdr.ipv4_base.dst_addr", self.ip_host_b_str, 16)],
+            1)
+        # Clone IPv4 to CPU with CoS 4
+        self.send_request_add_entry_to_action(
+            "ingress.punt.punt_table",
+            [self.Ternary("hdr.ethernet.ether_type", IPv4_ethertype, "\xff\xff")],
+            "set_queue_and_clone_to_cpu",
+            [("queue_id", stringify(4, 2))]
+        )
+
+        pkt = testutils.simple_ip_packet(
+            pktlen=60, eth_src=self.host_port_a_mac, eth_dst=self.switch_port_a_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=64)
+        exp_pkt = testutils.simple_ip_packet(
+            pktlen=60, eth_src=self.switch_port_b_mac, eth_dst=self.host_port_b_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=63)
+
+        # Direct Tx to loopback port
+        pkt_out = p4runtime_pb2.PacketOut()
+        pkt_out.payload = str(pkt)
+        egress_physical_port = pkt_out.metadata.add()
+        egress_physical_port.metadata_id = 1
+        egress_physical_port.value = stringify(13, 2)
+        self.send_packet_out(pkt_out)
+        testutils.verify_packets(self, exp_pkt, [self.host_port_b])
+        recv_pkt = self.get_packet_in()
+        if pkt_out.payload != recv_pkt.payload:
+            self.fail("Cloned packet does not match sent packet")
 
 
 class PktIoOutDirectToCPUTest(ConfiguredTest):
@@ -584,9 +634,6 @@ class PacketIoOutSpamTest(ConfiguredTest):
         for update in del_req.updates:
             if update.type == p4runtime_pb2.Update.INSERT:
                 update.type = p4runtime_pb2.Update.DELETE
-
-        print(req)
-        print(del_req)
 
         for i in range(100):
             self.write_request(del_req, False)
