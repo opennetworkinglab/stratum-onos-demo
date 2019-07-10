@@ -81,7 +81,7 @@ Use `onos`/`rocks` to log in.
 
 ### stratum_bmv2 logs
 
-The log of eachstratum_bmv2 instance can be found under `./tmp` in this
+The log of each `stratum_bmv2` instance can be found under `./tmp` in this
 directory. For example, the log of switch instance `leaf1` will be at
 `./tmp/leaf1/stratum_bmv2.log`
 
