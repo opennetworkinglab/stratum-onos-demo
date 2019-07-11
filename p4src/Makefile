@@ -29,7 +29,6 @@ bmv2-pp:
 	mkdir -p ${build_dir}/bmv2
 	${p4c_bmv2} --pp ${build_dir}/bmv2/pp.p4 max.p4
 
-
 tofino:
 	### Generate tofino.bin
 	###
