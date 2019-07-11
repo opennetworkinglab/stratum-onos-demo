@@ -141,10 +141,10 @@ control l3_fwd(inout parsed_packet_t hdr,
           local_metadata.vrf_id: exact @proto_tag(1);
           hdr.ipv4_base.dst_addr : lpm @proto_tag(2);
           hdr.ipv4_base.dst_addr : ternary @proto_tag(3);
-          // hdr.ipv4_base.src_addr : selector @proto_tag(3);
-          // hdr.ipv4_base.protocol : selector @proto_tag(4);
-          // local_metadata.l4_src_port : selector @proto_tag(5);
-          // local_metadata.l4_dst_port : selector @proto_tag(6);
+          hdr.ipv4_base.src_addr : selector @proto_tag(3);
+          hdr.ipv4_base.protocol : selector @proto_tag(4);
+          local_metadata.l4_src_port : selector @proto_tag(5);
+          local_metadata.l4_dst_port : selector @proto_tag(6);
       }
       actions = {
           @proto_tag(1) set_nexthop;
