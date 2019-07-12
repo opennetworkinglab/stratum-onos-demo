@@ -11,10 +11,12 @@ p4c_bmv2 := ${docker_run} -w ${current_dir} ${p4c_bmv2_img} p4c-bm2-ss --arch v1
 bf_sde_img := opennetworking/bf-sde:8.9.1
 p4c_tofino := ${docker_run} -w ${current_dir} ${bf_sde_img} bf-p4c --arch v1model
 p4i_tofino := ${docker_run} -w ${build_dir}/tofino -p3000:3000 -d --name p4i-${sha1} ${bf_sde_img} p4i
+p4c_fpm_img := opennetworking/p4c-fpm:latest
+p4c_fpm := ${docker_run} -w ${current_dir} ${p4c_fpm_img} p4c
 
 .PHONY: build
 
-build: bmv2 tofino
+build: bmv2 tofino fpm
 
 bmv2: bmv2-pp
 	### Generate bmv2.json and p4info.txt
@@ -35,6 +37,24 @@ tofino:
 	mkdir -p ${build_dir}/tofino
 	${p4c_tofino} -g -o ${build_dir}/tofino \
 		--p4runtime-files ${build_dir}/bmv2/p4info.txt max.p4
+
+fpm:
+	### Generate pipeline_config.bin/.txt and p4info.txt
+	###
+	mkdir -p ${build_dir}/fpm
+	${p4c_fpm} --p4c_fe_options=" \
+			-I /usr/share/p4c/p4include \
+			--std=p4-16 \
+			--target=BCM \
+			--Wdisable=legacy \
+			--Wwarn=all \
+			max.p4" \
+		--p4_info_file=${build_dir}/fpm/p4info.txt \
+		--p4_pipeline_config_text_file=${build_dir}/fpm/pipeline_config.txt \
+		--p4_pipeline_config_binary_file=${build_dir}/fpm/pipeline_config.bin \
+		--p4c_annotation_map_files=max_table_map.pb.txt,max_field_map.pb.txt \
+		--target_parser_map_file=standard_parser_map.pb.txt \
+		--slice_map_file=sliced_field_map.pb.txt
 
 p4i-start:
 	### Starting p4i container...
