@@ -5,7 +5,7 @@
 #include "parser.p4"
 #include "ipv4_checksum.p4"
 
-#define CPU_MIRROR_SESSION_ID 1023
+#define CPU_MIRROR_SESSION_ID 511
 #define METER_GREEN 0
 
 
