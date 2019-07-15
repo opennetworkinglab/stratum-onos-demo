@@ -31,7 +31,9 @@ from base_test import P4RuntimeTest, autocleanup, stringify, ipv4_to_binary, mac
 
 
 IPv4_ethertype = "\x08\x00"
+ARP_ethertype = 0x0806
 CPU_port = "\x00\xfd"
+CPU_MIRROR_SESSION_ID = 511
 
 # Base class with configuration parameters
 class ConfiguredTest(P4RuntimeTest):
@@ -650,24 +652,32 @@ class CloneSessionTest(ConfiguredTest):
     """
     TODO
     Canonical way to create a clone session.
-
-    Not supported by bcm
     """
     @autocleanup
-    def runTestDISABLED(self):
+    def runTest(self):
         pkt = testutils.simple_ip_packet(
             pktlen=60, eth_src=self.host_port_a_mac, eth_dst=self.switch_port_a_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=64)
         exp_pkt = testutils.simple_ip_packet(
             pktlen=60, eth_src=self.switch_port_b_mac, eth_dst=self.host_port_b_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=63)
 
-        # Direct Tx to loopback port
-        pkt_out = p4runtime_pb2.PacketOut()
-        pkt_out.payload = str(pkt)
-        egress_physical_port = pkt_out.metadata.add()
-        egress_physical_port.metadata_id = 1
-        egress_physical_port.value = stringify(13, 2)
+        self.add_clone_session(CPU_MIRROR_SESSION_ID, [34])
 
-        self.add_clone_session(511, [34])
+
+class L2MulticastTest(ConfiguredTest):
+    """
+    TODO
+    """
+    @autocleanup
+    def runTest(self):
+        # Redirect IPv4 to CPU with CoS 4
+        req, resp = self.send_request_add_entry_to_action(
+            "ingress.punt.punt_table",
+            [self.Ternary("hdr.ethernet.ether_type", IPv4_ethertype, "\xff\xff")],
+            "set_queue_and_send_to_cpu",
+            [("queue_id", stringify(4, 2))]
+        )
+
+        self.add_mcast_group(1, [34])
 
 
 class EcmpTest(ConfiguredTest):
