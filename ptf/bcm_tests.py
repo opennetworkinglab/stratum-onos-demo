@@ -30,9 +30,9 @@ from google.rpc import code_pb2
 from base_test import P4RuntimeTest, autocleanup, stringify, ipv4_to_binary, mac_to_binary
 
 
-IPv4_ethertype = "\x08\x00"
-ARP_ethertype = 0x0806
-CPU_port = "\x00\xfd"
+IPV4_ETHERTYPE = "\x08\x00"
+ARP_ETHERTYPE = 0x0806
+CPU_PORT = "\x00\xfd"
 CPU_MIRROR_SESSION_ID = 511
 
 # Base class with configuration parameters
@@ -256,7 +256,7 @@ class PacketIoOutDirectLoopbackPortAclTest(ConfiguredTest):
         # Redirect IPv4 to CPU with CoS 4
         self.send_request_add_entry_to_action(
             "ingress.punt.punt_table",
-            [self.Ternary("hdr.ethernet.ether_type", IPv4_ethertype, "\xff\xff")],
+            [self.Ternary("hdr.ethernet.ether_type", IPV4_ETHERTYPE, "\xff\xff")],
             "set_queue_and_send_to_cpu",
             [("queue_id", stringify(4, 2))]
         )
@@ -333,7 +333,7 @@ class PacketIoOutDirectLoopbackCloneToCpuTest(ConfiguredTest):
         # Clone IPv4 to CPU with CoS 4
         self.send_request_add_entry_to_action(
             "ingress.punt.punt_table",
-            [self.Ternary("hdr.ethernet.ether_type", IPv4_ethertype, "\xff\xff")],
+            [self.Ternary("hdr.ethernet.ether_type", IPV4_ETHERTYPE, "\xff\xff")],
             "set_queue_and_clone_to_cpu",
             [("queue_id", stringify(4, 2))]
         )
@@ -375,7 +375,7 @@ class PktIoOutDirectToCPUTest(ConfiguredTest):
     def runTestDISABLED(self):
         self.send_request_add_entry_to_action(
             "ingress.punt.punt_table",
-            [self.Ternary("hdr.ethernet.ether_type", IPv4_ethertype, "\xff\xff")],
+            [self.Ternary("hdr.ethernet.ether_type", IPV4_ETHERTYPE, "\xff\xff")],
             "set_queue_and_send_to_cpu",
             [("queue_id", stringify(4, 2))]
         )
@@ -384,7 +384,7 @@ class PktIoOutDirectToCPUTest(ConfiguredTest):
             "ingress.l3_fwd.wcmp_action_profile",
             1,
             "ingress.l3_fwd.set_nexthop",
-            [("port", CPU_port), ("smac", "\x00\x00\x00\x00\x00\x00"), ("dmac", "\x00\x00\x00\x00\x00\x00"), ("dst_vlan", stringify(1, 2))]
+            [("port", CPU_PORT), ("smac", "\x00\x00\x00\x00\x00\x00"), ("dmac", "\x00\x00\x00\x00\x00\x00"), ("dst_vlan", stringify(1, 2))]
         )
         self.send_request_add_entry_to_member(
             "ingress.l3_fwd.l3_fwd_table",
@@ -435,7 +435,7 @@ class RedirectDataplaneToCpuNextHopTest(ConfiguredTest):
             "ingress.l3_fwd.wcmp_action_profile",
             2,
             "ingress.l3_fwd.set_nexthop",
-            [("port", CPU_port), ("smac", "\x00\x00\x00\x00\x00\x00"), ("dmac", "\x00\x00\x00\x00\x00\x00"), ("dst_vlan", stringify(1, 2))]
+            [("port", CPU_PORT), ("smac", "\x00\x00\x00\x00\x00\x00"), ("dmac", "\x00\x00\x00\x00\x00\x00"), ("dst_vlan", stringify(1, 2))]
         )
         # UC /8 route to port B
         self.send_request_add_entry_to_member(
@@ -536,7 +536,7 @@ class RedirectDataplaneToCpuACLTest(ConfiguredTest):
         # Redirect IPv4 to CPU with CoS 4
         self.send_request_add_entry_to_action(
             "ingress.punt.punt_table",
-            [self.Ternary("hdr.ethernet.ether_type", IPv4_ethertype, "\xff\xff")],
+            [self.Ternary("hdr.ethernet.ether_type", IPV4_ETHERTYPE, "\xff\xff")],
             "set_queue_and_send_to_cpu",
             [("queue_id", stringify(4, 2))]
         )
@@ -627,7 +627,7 @@ class PacketIoOutSpamTest(ConfiguredTest):
         # Redirect IPv4 to CPU with CoS 4
         req, resp = self.send_request_add_entry_to_action(
             "ingress.punt.punt_table",
-            [self.Ternary("hdr.ethernet.ether_type", IPv4_ethertype, "\xff\xff")],
+            [self.Ternary("hdr.ethernet.ether_type", IPV4_ETHERTYPE, "\xff\xff")],
             "set_queue_and_send_to_cpu",
             [("queue_id", stringify(4, 2))]
         )
@@ -672,7 +672,7 @@ class L2MulticastTest(ConfiguredTest):
         # Redirect IPv4 to CPU with CoS 4
         req, resp = self.send_request_add_entry_to_action(
             "ingress.punt.punt_table",
-            [self.Ternary("hdr.ethernet.ether_type", IPv4_ethertype, "\xff\xff")],
+            [self.Ternary("hdr.ethernet.ether_type", IPV4_ETHERTYPE, "\xff\xff")],
             "set_queue_and_send_to_cpu",
             [("queue_id", stringify(4, 2))]
         )
