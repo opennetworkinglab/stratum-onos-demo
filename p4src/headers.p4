@@ -145,5 +145,6 @@ struct local_metadata_t {
     @switchstack("field_type: P4_FIELD_TYPE_VLAN_VID")
     bit<12> dst_vlan;
     bit<1> is_mcast;
+    bit<1> l2_hit;
 }
 #endif // P4_SPEC_HEADERS_P4_

@@ -2,10 +2,7 @@ version: "3"
 
 services:
   mininet:
-    build:
-      context: .
-    container_name: 'mininet'
-    hostname: 'mininet'
+    image: opennetworking/mn-stratum:latest
     privileged: true
     ports:
       - "50001:50001"
@@ -14,10 +11,10 @@ services:
       - "50004:50004"
     volumes:
       - ./tmp:/tmp
+      - ./topo:/topo
+    entrypoint: "/topo/entrypoint.sh"
   onos:
     image: onosproject/onos:latest
-    container_name: 'onos'
-    hostname: 'onos'
     depends_on:
       - mininet
     ports:
