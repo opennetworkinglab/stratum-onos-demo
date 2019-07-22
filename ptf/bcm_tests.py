@@ -48,8 +48,8 @@ class ConfiguredTest(P4RuntimeTest):
         self.ip_host_b_str = ipv4_to_binary(self.ip_host_b)
         self.host_port_a = self.swports(0) # 35 on switch
         self.host_port_b = self.swports(1) # 34 on switch
-        self.switch_port_a = stringify(35, 2)
-        self.switch_port_b = stringify(34, 2)
+        self.switch_port_a = stringify(34, 2)
+        self.switch_port_b = stringify(35, 2)
         self.switch_port_loopback = stringify(13, 2)
         self.host_port_a_mac = mac_to_binary("3c:fd:fe:a8:ea:30")
         self.host_port_b_mac = mac_to_binary("3c:fd:fe:a8:ea:31")
@@ -67,6 +67,11 @@ class PktIoOutDirectToDataPlaneTest(ConfiguredTest):
         pkt_out.payload = str(pkt)
         egress_physical_port = pkt_out.metadata.add()
         egress_physical_port.metadata_id = 1
+
+        egress_physical_port.value = self.switch_port_a
+        self.send_packet_out(pkt_out)
+        testutils.verify_packets(self, pkt, [self.host_port_a])
+
         egress_physical_port.value = self.switch_port_b
         self.send_packet_out(pkt_out)
         testutils.verify_packets(self, pkt, [self.host_port_b])
@@ -279,7 +284,7 @@ class PacketIoOutDirectLoopbackL3ForwardingTest(ConfiguredTest):
             "ingress.l3_fwd.set_l3_admit",
             []
         )
-        # # Create rules to forward to port B
+        # Create rules to forward to port B
         self.send_request_add_member(
             "ingress.l3_fwd.wcmp_action_profile",
             1,
@@ -622,7 +627,7 @@ class PacketIoOutSpamTest(ConfiguredTest):
         pkt_out.payload = str(pkt)
         egress_physical_port = pkt_out.metadata.add()
         egress_physical_port.metadata_id = 1
-        egress_physical_port.value = stringify(13, 2)
+        egress_physical_port.value = self.switch_port_loopback
 
         # Redirect IPv4 to CPU with CoS 4
         req, resp = self.send_request_add_entry_to_action(
@@ -660,7 +665,7 @@ class CloneSessionTest(ConfiguredTest):
         exp_pkt = testutils.simple_ip_packet(
             pktlen=60, eth_src=self.switch_port_b_mac, eth_dst=self.host_port_b_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=63)
 
-        self.add_clone_session(CPU_MIRROR_SESSION_ID, [34])
+        self.add_clone_session(CPU_MIRROR_SESSION_ID, [0xfd])
 
 
 class L2MulticastTest(ConfiguredTest):
@@ -669,15 +674,42 @@ class L2MulticastTest(ConfiguredTest):
     """
     @autocleanup
     def runTest(self):
-        # Redirect IPv4 to CPU with CoS 4
-        req, resp = self.send_request_add_entry_to_action(
-            "ingress.punt.punt_table",
-            [self.Ternary("hdr.ethernet.ether_type", IPV4_ETHERTYPE, "\xff\xff")],
-            "set_queue_and_send_to_cpu",
-            [("queue_id", stringify(4, 2))]
+        mcast_group_id = 100
+        # Use different MAC here to prevent collisions with NIC MACs
+        mac_src = mac_to_binary("00:00:00:55:55:55")
+
+        self.add_mcast_group(mcast_group_id, [34, 35])
+
+        self.send_request_add_entry_to_action(
+            "ingress.mcast.mcast_table",
+            # [self.Exact("hdr.ethernet.ether_type", stringify(ARP_ETHERTYPE, 2))],
+            [self.Exact("hdr.ethernet.ether_type", stringify(ARP_ETHERTYPE, 2)),
+             self.Ternary("hdr.ethernet.src_addr", mac_src, "\xff\xff\xff\xff\xff\xff")],
+            "set_mcast_group_id",
+            [("group_id", stringify(mcast_group_id, 2))]
         )
 
-        self.add_mcast_group(1, [34])
+        pkt = testutils.simple_eth_packet(
+            pktlen=60, eth_type=ARP_ETHERTYPE,
+            eth_src=mac_src, eth_dst=self.switch_port_b_mac)
+
+        # Direct Tx to loopback port
+        pkt_out = p4runtime_pb2.PacketOut()
+        pkt_out.payload = str(pkt)
+        egress_physical_port = pkt_out.metadata.add()
+        egress_physical_port.metadata_id = 1
+        egress_physical_port.value = self.switch_port_loopback
+        self.send_packet_out(pkt_out)
+        testutils.verify_packets(self, pkt, [self.host_port_a, self.host_port_b])
+
+        # Check ingress port pruning
+        testutils.send_packet(self, self.host_port_a, pkt)
+        testutils.verify_packets(self, pkt, [self.host_port_b])
+        testutils.verify_no_other_packets(self)
+
+        testutils.send_packet(self, self.host_port_b, pkt)
+        testutils.verify_packets(self, pkt, [self.host_port_a])
+        testutils.verify_no_other_packets(self)
 
 
 class EcmpTest(ConfiguredTest):

@@ -98,9 +98,7 @@ control l3_fwd(inout parsed_packet_t hdr,
                 inout standard_metadata_t standard_metadata) {
   action nop() { }
 
-  action drop() {
-      mark_to_drop(standard_metadata);
-  }
+  action drop() { mark_to_drop(standard_metadata); }
 
   @proto_package("l3_admit")
   action set_l3_admit() {
@@ -161,11 +159,37 @@ control l3_fwd(inout parsed_packet_t hdr,
   }
 } // end l3_fwd
 
+control mcast(inout parsed_packet_t hdr,
+                inout local_metadata_t local_metadata,
+                inout standard_metadata_t standard_metadata) {
+
+  action set_mcast_group_id(bit<16> group_id) {
+    standard_metadata.mcast_grp = group_id;
+  }
+
+  @switchstack("pipeline_stage: INGRESS_ACL")
+  table mcast_table {
+    key = {
+      hdr.ethernet.src_addr : ternary;
+      hdr.ethernet.dst_addr : ternary;
+      hdr.ethernet.ether_type : exact;
+    }
+    actions = {
+      set_mcast_group_id;
+    }
+  }
+
+  apply {
+    mcast_table.apply();
+  }
+} // end mcast
+
 control ingress(inout parsed_packet_t hdr,
                 inout local_metadata_t local_metadata,
                 inout standard_metadata_t standard_metadata) {
   apply {
     punt.apply(hdr, local_metadata, standard_metadata);
+    mcast.apply(hdr, local_metadata, standard_metadata);
     l3_fwd.apply(hdr, local_metadata, standard_metadata);
   }
 } // end ingress
