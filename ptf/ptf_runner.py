@@ -146,8 +146,6 @@ def run_test(config_path, p4info_path, grpc_addr, device_id,
     Device must be running and configfured with appropriate P4 program.
     '''
     # TODO: check schema?
-    # "p4_port" is ignored for now, we assume that ports are provided by
-    # increasing values of p4_port, in the range [0, NUM_IFACES[.
     port_map = OrderedDict()
     with open(port_map_path, 'r') as port_map_f:
         port_list = json.load(port_map_f)

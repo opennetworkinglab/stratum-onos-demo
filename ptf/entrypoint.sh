@@ -9,9 +9,9 @@ GRPC_PORT=28000
 
 INTFS=
 for idx in 0 1 2 3 4 5 6 7; do
-    ptfPort=${idx}
+    p4Port=$(( ${idx} + 1 ))
     vethIdx=$(( 2*${idx} + 1 ))
-    INTFS="${INTFS} -i${ptfPort}@veth${vethIdx}"
+    INTFS="${INTFS} -i${p4Port}@veth${vethIdx}"
 done
 
 #stratum_bmv2 \

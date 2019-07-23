@@ -51,10 +51,10 @@ class ConfiguredTest(P4RuntimeTest):
         self.ip_host_a_str = ipv4_to_binary(self.ip_host_a)
         self.ip_host_b_str = ipv4_to_binary(self.ip_host_b)
         # FIXME make target independent
-        self.host_port_a = self.swports(1) # 35 on BCM
-        self.host_port_b = self.swports(2) # 34 on BCM
-        self.switch_port_a = stringify(1, 2) # 34 on BCM
-        self.switch_port_b = stringify(2, 2) # 35 on BCM
+        self.port_a = self.swports(0)  # ptf_port in port map file
+        self.port_b = self.swports(1)
+        self.port_a_ = stringify(self.port_a, 2)
+        self.port_b_ = stringify(self.port_b, 2)
         self.switch_port_loopback = stringify(LOOPBACK_PORT, 2)
         self.host_port_a_mac = mac_to_binary("3c:fd:fe:a8:ea:30")
         self.host_port_b_mac = mac_to_binary("3c:fd:fe:a8:ea:31")
@@ -74,13 +74,13 @@ class PktIoOutDirectToDataPlaneTest(ConfiguredTest):
         egress_physical_port = pkt_out.metadata.add()
         egress_physical_port.metadata_id = 1
 
-        egress_physical_port.value = self.switch_port_a
+        egress_physical_port.value = self.port_a_
         self.send_packet_out(pkt_out)
-        testutils.verify_packets(self, pkt, [self.host_port_a])
+        testutils.verify_packets(self, pkt, [self.port_a])
 
-        egress_physical_port.value = self.switch_port_b
+        egress_physical_port.value = self.port_b_
         self.send_packet_out(pkt_out)
-        testutils.verify_packets(self, pkt, [self.host_port_b])
+        testutils.verify_packets(self, pkt, [self.port_b])
 
     @autocleanup
     def runTest(self):
@@ -114,7 +114,7 @@ class PktIoOutToIngressPipelineAclRedirectToPortTest(ConfiguredTest):
         egress_physical_port.metadata_id = 1
         egress_physical_port.value = stringify(0, 1)
         self.send_packet_out(pkt_out)
-        testutils.verify_packets(self, pkt, [self.host_port_b])
+        testutils.verify_packets(self, pkt, [self.port_b])
 
     @autocleanup
     def runTest(self):
@@ -137,7 +137,7 @@ class PktIoOutToIngressPipelineAclRedirectToPortTest(ConfiguredTest):
             "ingress.punt.punt_table",
             [self.Ternary("hdr.ethernet.ether_type", "\x08\x00", "\xFF\xFF")],
             "set_egress_port",
-            [("port", self.switch_port_b)],
+            [("port", self.port_b_)],
             DEFAULT_PRIORITY
         )
         for p in pkts:
@@ -216,13 +216,13 @@ class PktIoOutToIngressPipelineL3ForwardingTest(ConfiguredTest):
             "ingress.l3_fwd.wcmp_action_profile",
             1,
             "ingress.l3_fwd.set_nexthop",
-            [("port", self.switch_port_a), ("smac", self.switch_port_a_mac), ("dmac", self.host_port_a_mac), ("dst_vlan", stringify(1, 2))]
+            [("port", self.port_a_), ("smac", self.switch_port_a_mac), ("dmac", self.host_port_a_mac), ("dst_vlan", stringify(1, 2))]
         )
         self.send_request_add_member(
             "ingress.l3_fwd.wcmp_action_profile",
             2,
             "ingress.l3_fwd.set_nexthop",
-            [("port", self.switch_port_b), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
+            [("port", self.port_b_), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
         )
         # Create L3 forwarding rules
         self.send_request_add_entry_to_member(
@@ -244,10 +244,10 @@ class PktIoOutToIngressPipelineL3ForwardingTest(ConfiguredTest):
         egress_physical_port.metadata_id = 1
         egress_physical_port.value = stringify(0, 2)
         # Check if L3 setup is sound with dataplane packet
-        testutils.send_packet(self, self.host_port_a, pkt)
-        testutils.verify_packets(self, exp_pkt, [self.host_port_b])
+        testutils.send_packet(self, self.port_a, pkt)
+        testutils.verify_packets(self, exp_pkt, [self.port_b])
         self.send_packet_out(pkt_out)
-        testutils.verify_packets(self, exp_pkt, [self.host_port_b]) # Breaks here
+        testutils.verify_packets(self, exp_pkt, [self.port_b]) # Breaks here
 
 @testutils.group("bmv2")
 class PacketIoOutDirectLoopbackPortAclTest(ConfiguredTest):
@@ -298,7 +298,7 @@ class PacketIoOutDirectLoopbackL3ForwardingTest(ConfiguredTest):
             "ingress.l3_fwd.wcmp_action_profile",
             1,
             "ingress.l3_fwd.set_nexthop",
-            [("port", self.switch_port_b), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
+            [("port", self.port_b_), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
         )
         self.send_request_add_entry_to_member(
             "ingress.l3_fwd.l3_fwd_table",
@@ -317,7 +317,7 @@ class PacketIoOutDirectLoopbackL3ForwardingTest(ConfiguredTest):
         egress_physical_port.metadata_id = 1
         egress_physical_port.value = stringify(LOOPBACK_PORT, 2)
         self.send_packet_out(pkt_out)
-        testutils.verify_packets(self, exp_pkt, [self.host_port_b])
+        testutils.verify_packets(self, exp_pkt, [self.port_b])
 
 @testutils.group("bmv2")
 class PacketIoOutDirectLoopbackCloneToCpuTest(ConfiguredTest):
@@ -339,7 +339,7 @@ class PacketIoOutDirectLoopbackCloneToCpuTest(ConfiguredTest):
             "ingress.l3_fwd.wcmp_action_profile",
             1,
             "ingress.l3_fwd.set_nexthop",
-            [("port", self.switch_port_b), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
+            [("port", self.port_b_), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
         )
         self.send_request_add_entry_to_member(
             "ingress.l3_fwd.l3_fwd_table",
@@ -367,7 +367,7 @@ class PacketIoOutDirectLoopbackCloneToCpuTest(ConfiguredTest):
         egress_physical_port.metadata_id = 1
         egress_physical_port.value = stringify(LOOPBACK_PORT, 2)
         self.send_packet_out(pkt_out)
-        testutils.verify_packets(self, exp_pkt, [self.host_port_b])
+        testutils.verify_packets(self, exp_pkt, [self.port_b])
         self.verify_packet_in(exp_pkt, CPU_PORT)
 
 
@@ -381,7 +381,7 @@ class PktIoOutDirectToCPUTest(ConfiguredTest):
         pkt_out.payload = str(pkt)
         egress_physical_port = pkt_out.metadata.add()
         egress_physical_port.metadata_id = 1
-        egress_physical_port.value = self.switch_port_b
+        egress_physical_port.value = self.port_b_
         self.send_packet_out(pkt_out)
         recv_pkt = self.get_packet_in()
         testutils.verify_no_other_packets(self, timeout=0.5)
@@ -444,7 +444,7 @@ class RedirectDataplaneToCpuNextHopTest(ConfiguredTest):
             "ingress.l3_fwd.wcmp_action_profile",
             1,
             "ingress.l3_fwd.set_nexthop",
-            [("port", self.switch_port_b), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
+            [("port", self.port_b_), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
         )
         # Trap nexthop to CPU
         self.send_request_add_member(
@@ -466,7 +466,7 @@ class RedirectDataplaneToCpuNextHopTest(ConfiguredTest):
 
         pkt = testutils.simple_ip_packet(
             pktlen=60, eth_src=self.host_port_a_mac, eth_dst=self.switch_port_a_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=64)
-        testutils.send_packet(self, self.host_port_a, pkt)
+        testutils.send_packet(self, self.port_a, pkt)
         testutils.verify_no_other_packets(self)
         recv_pkt = self.get_packet_in(timeout=1)
         print(recv_pkt)
@@ -490,7 +490,7 @@ class RedirectDataplaneToDataplaneTest(ConfiguredTest):
             "ingress.l3_fwd.wcmp_action_profile",
             1,
             "ingress.l3_fwd.set_nexthop",
-            [("port", self.switch_port_b), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
+            [("port", self.port_b_), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
         )
         self.send_request_add_entry_to_member(
             "ingress.l3_fwd.l3_fwd_table",
@@ -501,8 +501,8 @@ class RedirectDataplaneToDataplaneTest(ConfiguredTest):
             pktlen=60, eth_src=self.host_port_a_mac, eth_dst=self.switch_port_a_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=64)
         exp_pkt = testutils.simple_ip_packet(
             pktlen=60, eth_src=self.switch_port_b_mac, eth_dst=self.host_port_b_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=63)
-        testutils.send_packet(self, self.host_port_a, pkt)
-        testutils.verify_packets(self, exp_pkt, [self.host_port_b])
+        testutils.send_packet(self, self.port_a, pkt)
+        testutils.verify_packets(self, exp_pkt, [self.port_b])
         testutils.verify_no_other_packets(self)
 
         # Redirect ipv4 to port A
@@ -510,10 +510,10 @@ class RedirectDataplaneToDataplaneTest(ConfiguredTest):
             "ingress.punt.punt_table",
             [self.Ternary("hdr.ethernet.ether_type", "\x08\x00", "\x08\x00")],
             "set_egress_port",
-            [("port", self.switch_port_a)]
+            [("port", self.port_a_)]
         )
-        testutils.send_packet(self, self.host_port_a, pkt)
-        testutils.verify_packets(self, exp_pkt, [self.host_port_a])
+        testutils.send_packet(self, self.port_a, pkt)
+        testutils.verify_packets(self, exp_pkt, [self.port_a])
         testutils.verify_no_other_packets(self)
 
 
@@ -536,7 +536,7 @@ class RedirectDataplaneToCpuACLTest(ConfiguredTest):
             "ingress.l3_fwd.wcmp_action_profile",
             1,
             "ingress.l3_fwd.set_nexthop",
-            [("port", self.switch_port_b), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
+            [("port", self.port_b_), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
         )
         self.send_request_add_entry_to_member(
             "ingress.l3_fwd.l3_fwd_table",
@@ -547,8 +547,8 @@ class RedirectDataplaneToCpuACLTest(ConfiguredTest):
             pktlen=60, eth_src=self.host_port_a_mac, eth_dst=self.switch_port_a_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=64)
         exp_pkt = testutils.simple_ip_packet(
             pktlen=60, eth_src=self.switch_port_b_mac, eth_dst=self.host_port_b_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=63)
-        testutils.send_packet(self, self.host_port_a, pkt)
-        testutils.verify_packets(self, exp_pkt, [self.host_port_b])
+        testutils.send_packet(self, self.port_a, pkt)
+        testutils.verify_packets(self, exp_pkt, [self.port_b])
         testutils.verify_no_other_packets(self)
 
         # Redirect IPv4 to CPU with CoS 4
@@ -558,7 +558,7 @@ class RedirectDataplaneToCpuACLTest(ConfiguredTest):
             "set_queue_and_send_to_cpu",
             [("queue_id", stringify(4, 1))]
         )
-        testutils.send_packet(self, self.host_port_a, pkt)
+        testutils.send_packet(self, self.port_a, pkt)
         testutils.verify_no_other_packets(self)
         recv_pkt = self.get_packet_in(timeout=1)
         print(recv_pkt)
@@ -590,13 +590,13 @@ class L3ForwardTest(ConfiguredTest):
             "ingress.l3_fwd.wcmp_action_profile",
             1,
             "ingress.l3_fwd.set_nexthop",
-            [("port", self.switch_port_a), ("smac", self.switch_port_a_mac), ("dmac", self.host_port_a_mac), ("dst_vlan", stringify(1, 2))]
+            [("port", self.port_a_), ("smac", self.switch_port_a_mac), ("dmac", self.host_port_a_mac), ("dst_vlan", stringify(1, 2))]
         )
         self.send_request_add_member(
             "ingress.l3_fwd.wcmp_action_profile",
             2,
             "ingress.l3_fwd.set_nexthop",
-            [("port", self.switch_port_b), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
+            [("port", self.port_b_), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
         )
         # Create L3 forwarding rules
         self.send_request_add_entry_to_member(
@@ -612,16 +612,16 @@ class L3ForwardTest(ConfiguredTest):
             pktlen=60, eth_src=self.host_port_a_mac, eth_dst=self.switch_port_a_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=64)
         exp_pkt = testutils.simple_ip_packet(
             pktlen=60, eth_src=self.switch_port_b_mac, eth_dst=self.host_port_b_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=63)
-        testutils.send_packet(self, self.host_port_a, pkt)
-        testutils.verify_packets(self, exp_pkt, [self.host_port_b])
+        testutils.send_packet(self, self.port_a, pkt)
+        testutils.verify_packets(self, exp_pkt, [self.port_b])
         testutils.verify_no_other_packets(self)
         # Test host B to A
         pkt = testutils.simple_ip_packet(
             pktlen=60, eth_src=self.host_port_b_mac, eth_dst=self.switch_port_b_mac, ip_src=self.ip_host_b, ip_dst=self.ip_host_a, ip_ttl=64)
         exp_pkt = testutils.simple_ip_packet(
             pktlen=60, eth_src=self.switch_port_a_mac, eth_dst=self.host_port_a_mac, ip_src=self.ip_host_b, ip_dst=self.ip_host_a, ip_ttl=63)
-        testutils.send_packet(self, self.host_port_b, pkt)
-        testutils.verify_packets(self, exp_pkt, [self.host_port_a])
+        testutils.send_packet(self, self.port_b, pkt)
+        testutils.verify_packets(self, exp_pkt, [self.port_a])
         testutils.verify_no_other_packets(self)
 
 
@@ -715,15 +715,15 @@ class L2MulticastTest(ConfiguredTest):
         egress_physical_port.metadata_id = 1
         egress_physical_port.value = self.switch_port_loopback
         self.send_packet_out(pkt_out)
-        testutils.verify_packets(self, pkt, [self.host_port_a, self.host_port_b])
+        testutils.verify_packets(self, pkt, [self.port_a, self.port_b])
 
         # Check ingress port pruning
-        testutils.send_packet(self, self.host_port_a, pkt)
-        testutils.verify_packets(self, pkt, [self.host_port_b])
+        testutils.send_packet(self, self.port_a, pkt)
+        testutils.verify_packets(self, pkt, [self.port_b])
         testutils.verify_no_other_packets(self)
 
-        testutils.send_packet(self, self.host_port_b, pkt)
-        testutils.verify_packets(self, pkt, [self.host_port_a])
+        testutils.send_packet(self, self.port_b, pkt)
+        testutils.verify_packets(self, pkt, [self.port_a])
         testutils.verify_no_other_packets(self)
 
 
@@ -754,13 +754,13 @@ class EcmpTest(ConfiguredTest):
             "ingress.l3_fwd.wcmp_action_profile",
             1,  # nhop id
             "ingress.l3_fwd.set_nexthop",
-            [("port", self.switch_port_a), ("smac", self.switch_port_a_mac), ("dmac", self.host_port_a_mac), ("dst_vlan", stringify(1, 2))]
+            [("port", self.port_a_), ("smac", self.switch_port_a_mac), ("dmac", self.host_port_a_mac), ("dst_vlan", stringify(1, 2))]
         )
         self.send_request_add_member(
             "ingress.l3_fwd.wcmp_action_profile",
             2,  # nhop id
             "ingress.l3_fwd.set_nexthop",
-            [("port", self.switch_port_b), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
+            [("port", self.port_b_), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
         )
 
         # Create ECMP group
@@ -800,10 +800,10 @@ class EcmpTest(ConfiguredTest):
             egress_physical_port.value = self.switch_port_loopback
             self.send_packet_out(pkt_out)
 
-            hit_port = testutils.verify_any_packet_any_port(self, [exp_pkt_on_a, exp_pkt_on_b], [self.host_port_a, self.host_port_b])
+            hit_port = testutils.verify_any_packet_any_port(self, [exp_pkt_on_a, exp_pkt_on_b], [self.port_a, self.port_b])
             hits[hit_port] = True
 
-        if not hits[self.host_port_a]:
+        if not hits[self.port_a]:
             self.fail("Port A never hit")
-        if not hits[self.host_port_b]:
+        if not hits[self.port_b]:
             self.fail("Port B never hit")
