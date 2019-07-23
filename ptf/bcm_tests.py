@@ -32,8 +32,12 @@ from base_test import P4RuntimeTest, autocleanup, stringify, ipv4_to_binary, mac
 
 IPV4_ETHERTYPE = "\x08\x00"
 ARP_ETHERTYPE = 0x0806
-CPU_PORT = "\x00\xfd"
+CPU_PORT_ = "\x00\xfd"
+CPU_PORT = 0xfd
 CPU_MIRROR_SESSION_ID = 511
+
+DEFAULT_PRIORITY = 10
+LOOPBACK_PORT = 13
 
 # Base class with configuration parameters
 class ConfiguredTest(P4RuntimeTest):
@@ -46,17 +50,19 @@ class ConfiguredTest(P4RuntimeTest):
         self.ip_host_b = "10.2.0.1"
         self.ip_host_a_str = ipv4_to_binary(self.ip_host_a)
         self.ip_host_b_str = ipv4_to_binary(self.ip_host_b)
-        self.host_port_a = self.swports(0) # 35 on switch
-        self.host_port_b = self.swports(1) # 34 on switch
-        self.switch_port_a = stringify(34, 2)
-        self.switch_port_b = stringify(35, 2)
-        self.switch_port_loopback = stringify(13, 2)
+        # FIXME make target independent
+        self.host_port_a = self.swports(1) # 35 on BCM
+        self.host_port_b = self.swports(2) # 34 on BCM
+        self.switch_port_a = stringify(1, 2) # 34 on BCM
+        self.switch_port_b = stringify(2, 2) # 35 on BCM
+        self.switch_port_loopback = stringify(LOOPBACK_PORT, 2)
         self.host_port_a_mac = mac_to_binary("3c:fd:fe:a8:ea:30")
         self.host_port_b_mac = mac_to_binary("3c:fd:fe:a8:ea:31")
         self.switch_port_a_mac = mac_to_binary("00:00:00:aa:aa:aa")
         self.switch_port_b_mac = mac_to_binary("00:00:00:bb:bb:bb")
 
 
+@testutils.group("bmv2")
 class PktIoOutDirectToDataPlaneTest(ConfiguredTest):
     """
     Sent packets directly out of a physical port.
@@ -95,7 +101,7 @@ class PktIoOutDirectToDataPlaneTest(ConfiguredTest):
         for p in pkts:
             self.testPacket(p)
 
-
+@testutils.group("bmv2")
 class PktIoOutToIngressPipelineAclRedirectToPortTest(ConfiguredTest):
     """
     Sent packets out through the ingress pipeline and redirect it to
@@ -129,14 +135,15 @@ class PktIoOutToIngressPipelineAclRedirectToPortTest(ConfiguredTest):
         # Redirect ipv4 to port B
         self.send_request_add_entry_to_action(
             "ingress.punt.punt_table",
-            [self.Ternary("hdr.ethernet.ether_type", "\x08\x00", "\x08\x00")],
+            [self.Ternary("hdr.ethernet.ether_type", "\x08\x00", "\xFF\xFF")],
             "set_egress_port",
-            [("port", self.switch_port_b)]
+            [("port", self.switch_port_b)],
+            DEFAULT_PRIORITY
         )
         for p in pkts:
             self.testPacket(p)
 
-
+@testutils.group("bmv2")
 class PktIoOutToIngressPipelineAclPuntToCpuTest(ConfiguredTest):
     """
     Sent packets out through the ingress pipeline and punt it back
@@ -171,9 +178,10 @@ class PktIoOutToIngressPipelineAclPuntToCpuTest(ConfiguredTest):
         # Redirect ipv4 to CPU
         self.send_request_add_entry_to_action(
             "ingress.punt.punt_table",
-            [self.Ternary("hdr.ethernet.ether_type", "\x08\x00", "\x08\x00")],
+            [self.Ternary("hdr.ethernet.ether_type", "\x08\x00", "\xFF\xFF")],
             "set_queue_and_send_to_cpu",
-            [("queue_id", stringify(4, 2))]
+            [("queue_id", stringify(4, 1))],
+            DEFAULT_PRIORITY
         )
         for p in pkts:
             self.testPacket(p)
@@ -193,13 +201,15 @@ class PktIoOutToIngressPipelineL3ForwardingTest(ConfiguredTest):
             "ingress.l3_fwd.l3_routing_classifier_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
             "ingress.l3_fwd.set_l3_admit",
-            []
+            [],
+            DEFAULT_PRIORITY
         )
         self.send_request_add_entry_to_action(
             "ingress.l3_fwd.l3_routing_classifier_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_b_mac, "\xff\xff\xff\xff\xff\xff")],
             "ingress.l3_fwd.set_l3_admit",
-            []
+            [],
+            DEFAULT_PRIORITY
         )
         # Create nexthop entries
         self.send_request_add_member(
@@ -239,7 +249,7 @@ class PktIoOutToIngressPipelineL3ForwardingTest(ConfiguredTest):
         self.send_packet_out(pkt_out)
         testutils.verify_packets(self, exp_pkt, [self.host_port_b]) # Breaks here
 
-
+@testutils.group("bmv2")
 class PacketIoOutDirectLoopbackPortAclTest(ConfiguredTest):
     """
     Send a packet directly to loopback port and punt back via ACL.
@@ -248,29 +258,27 @@ class PacketIoOutDirectLoopbackPortAclTest(ConfiguredTest):
     def runTest(self):
         pkt = testutils.simple_ip_packet(
             pktlen=60, eth_src=self.host_port_a_mac, eth_dst=self.switch_port_a_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=64)
-        exp_pkt = testutils.simple_ip_packet(
-            pktlen=60, eth_src=self.switch_port_b_mac, eth_dst=self.host_port_b_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=63)
 
         # Direct Tx to loopback port
         pkt_out = p4runtime_pb2.PacketOut()
         pkt_out.payload = str(pkt)
         egress_physical_port = pkt_out.metadata.add()
         egress_physical_port.metadata_id = 1
-        egress_physical_port.value = stringify(13, 2)
+        egress_physical_port.value = stringify(LOOPBACK_PORT, 2)
 
         # Redirect IPv4 to CPU with CoS 4
         self.send_request_add_entry_to_action(
             "ingress.punt.punt_table",
             [self.Ternary("hdr.ethernet.ether_type", IPV4_ETHERTYPE, "\xff\xff")],
             "set_queue_and_send_to_cpu",
-            [("queue_id", stringify(4, 2))]
+            [("queue_id", stringify(4, 1))],
+            DEFAULT_PRIORITY
         )
         self.send_packet_out(pkt_out)
         testutils.verify_no_other_packets(self)
-        recv_pkt = self.get_packet_in()
-        print(recv_pkt)
+        self.verify_packet_in(pkt, CPU_PORT)
 
-
+@testutils.group("bmv2")
 class PacketIoOutDirectLoopbackL3ForwardingTest(ConfiguredTest):
     """
     Send a packet directly to loopback port and L3 forward it to
@@ -282,7 +290,8 @@ class PacketIoOutDirectLoopbackL3ForwardingTest(ConfiguredTest):
             "ingress.l3_fwd.l3_routing_classifier_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
             "ingress.l3_fwd.set_l3_admit",
-            []
+            [],
+            DEFAULT_PRIORITY
         )
         # Create rules to forward to port B
         self.send_request_add_member(
@@ -306,11 +315,11 @@ class PacketIoOutDirectLoopbackL3ForwardingTest(ConfiguredTest):
         pkt_out.payload = str(pkt)
         egress_physical_port = pkt_out.metadata.add()
         egress_physical_port.metadata_id = 1
-        egress_physical_port.value = stringify(13, 2)
+        egress_physical_port.value = stringify(LOOPBACK_PORT, 2)
         self.send_packet_out(pkt_out)
         testutils.verify_packets(self, exp_pkt, [self.host_port_b])
 
-
+@testutils.group("bmv2")
 class PacketIoOutDirectLoopbackCloneToCpuTest(ConfiguredTest):
     """
     Send a packet directly to loopback port, L3 forward it to
@@ -322,7 +331,8 @@ class PacketIoOutDirectLoopbackCloneToCpuTest(ConfiguredTest):
             "ingress.l3_fwd.l3_routing_classifier_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
             "ingress.l3_fwd.set_l3_admit",
-            []
+            [],
+            DEFAULT_PRIORITY
         )
         # Create rules to forward to port B
         self.send_request_add_member(
@@ -336,11 +346,13 @@ class PacketIoOutDirectLoopbackCloneToCpuTest(ConfiguredTest):
             [self.Exact("local_metadata.vrf_id", stringify(0, 2)), self.Lpm("hdr.ipv4_base.dst_addr", self.ip_host_b_str, 16)],
             1)
         # Clone IPv4 to CPU with CoS 4
+        self.add_clone_session(CPU_MIRROR_SESSION_ID, [CPU_PORT])
         self.send_request_add_entry_to_action(
             "ingress.punt.punt_table",
             [self.Ternary("hdr.ethernet.ether_type", IPV4_ETHERTYPE, "\xff\xff")],
             "set_queue_and_clone_to_cpu",
-            [("queue_id", stringify(4, 2))]
+            [("queue_id", stringify(4, 1))],
+            DEFAULT_PRIORITY
         )
 
         pkt = testutils.simple_ip_packet(
@@ -353,12 +365,10 @@ class PacketIoOutDirectLoopbackCloneToCpuTest(ConfiguredTest):
         pkt_out.payload = str(pkt)
         egress_physical_port = pkt_out.metadata.add()
         egress_physical_port.metadata_id = 1
-        egress_physical_port.value = stringify(13, 2)
+        egress_physical_port.value = stringify(LOOPBACK_PORT, 2)
         self.send_packet_out(pkt_out)
         testutils.verify_packets(self, exp_pkt, [self.host_port_b])
-        recv_pkt = self.get_packet_in()
-        if pkt_out.payload != recv_pkt.payload:
-            self.fail("Cloned packet does not match sent packet")
+        self.verify_packet_in(exp_pkt, CPU_PORT)
 
 
 class PktIoOutDirectToCPUTest(ConfiguredTest):
@@ -382,14 +392,14 @@ class PktIoOutDirectToCPUTest(ConfiguredTest):
             "ingress.punt.punt_table",
             [self.Ternary("hdr.ethernet.ether_type", IPV4_ETHERTYPE, "\xff\xff")],
             "set_queue_and_send_to_cpu",
-            [("queue_id", stringify(4, 2))]
+            [("queue_id", stringify(4, 1))]
         )
         # Trap nexthop to CPU
         self.send_request_add_member(
             "ingress.l3_fwd.wcmp_action_profile",
             1,
             "ingress.l3_fwd.set_nexthop",
-            [("port", CPU_PORT), ("smac", "\x00\x00\x00\x00\x00\x00"), ("dmac", "\x00\x00\x00\x00\x00\x00"), ("dst_vlan", stringify(1, 2))]
+            [("port", CPU_PORT_), ("smac", "\x00\x00\x00\x00\x00\x00"), ("dmac", "\x00\x00\x00\x00\x00\x00"), ("dst_vlan", stringify(1, 2))]
         )
         self.send_request_add_entry_to_member(
             "ingress.l3_fwd.l3_fwd_table",
@@ -426,7 +436,8 @@ class RedirectDataplaneToCpuNextHopTest(ConfiguredTest):
             "ingress.l3_fwd.l3_routing_classifier_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
             "ingress.l3_fwd.set_l3_admit",
-            []
+            [],
+            DEFAULT_PRIORITY
         )
         # Create rules to forward to port B
         self.send_request_add_member(
@@ -440,7 +451,7 @@ class RedirectDataplaneToCpuNextHopTest(ConfiguredTest):
             "ingress.l3_fwd.wcmp_action_profile",
             2,
             "ingress.l3_fwd.set_nexthop",
-            [("port", CPU_PORT), ("smac", "\x00\x00\x00\x00\x00\x00"), ("dmac", "\x00\x00\x00\x00\x00\x00"), ("dst_vlan", stringify(1, 2))]
+            [("port", CPU_PORT_), ("smac", "\x00\x00\x00\x00\x00\x00"), ("dmac", "\x00\x00\x00\x00\x00\x00"), ("dst_vlan", stringify(1, 2))]
         )
         # UC /8 route to port B
         self.send_request_add_entry_to_member(
@@ -471,7 +482,8 @@ class RedirectDataplaneToDataplaneTest(ConfiguredTest):
             "ingress.l3_fwd.l3_routing_classifier_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
             "ingress.l3_fwd.set_l3_admit",
-            []
+            [],
+            DEFAULT_PRIORITY
         )
         # Create rules to forward to port B
         self.send_request_add_member(
@@ -516,7 +528,8 @@ class RedirectDataplaneToCpuACLTest(ConfiguredTest):
             "ingress.l3_fwd.l3_routing_classifier_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
             "ingress.l3_fwd.set_l3_admit",
-            []
+            [],
+            DEFAULT_PRIORITY
         )
         # Create rules to forward to port B
         self.send_request_add_member(
@@ -543,7 +556,7 @@ class RedirectDataplaneToCpuACLTest(ConfiguredTest):
             "ingress.punt.punt_table",
             [self.Ternary("hdr.ethernet.ether_type", IPV4_ETHERTYPE, "\xff\xff")],
             "set_queue_and_send_to_cpu",
-            [("queue_id", stringify(4, 2))]
+            [("queue_id", stringify(4, 1))]
         )
         testutils.send_packet(self, self.host_port_a, pkt)
         testutils.verify_no_other_packets(self)
@@ -562,13 +575,15 @@ class L3ForwardTest(ConfiguredTest):
             "ingress.l3_fwd.l3_routing_classifier_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
             "ingress.l3_fwd.set_l3_admit",
-            []
+            [],
+            DEFAULT_PRIORITY
         )
         self.send_request_add_entry_to_action(
             "ingress.l3_fwd.l3_routing_classifier_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_b_mac, "\xff\xff\xff\xff\xff\xff")],
             "ingress.l3_fwd.set_l3_admit",
-            []
+            [],
+            DEFAULT_PRIORITY
         )
         # Create nexthop entries
         self.send_request_add_member(
@@ -634,7 +649,7 @@ class PacketIoOutSpamTest(ConfiguredTest):
             "ingress.punt.punt_table",
             [self.Ternary("hdr.ethernet.ether_type", IPV4_ETHERTYPE, "\xff\xff")],
             "set_queue_and_send_to_cpu",
-            [("queue_id", stringify(4, 2))]
+            [("queue_id", stringify(4, 1))]
         )
 
         del_req = self._get_new_write_request()
@@ -665,7 +680,7 @@ class CloneSessionTest(ConfiguredTest):
         exp_pkt = testutils.simple_ip_packet(
             pktlen=60, eth_src=self.switch_port_b_mac, eth_dst=self.host_port_b_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=63)
 
-        self.add_clone_session(CPU_MIRROR_SESSION_ID, [0xfd])
+        self.add_clone_session(CPU_MIRROR_SESSION_ID, [CPU_PORT])
 
 
 class L2MulticastTest(ConfiguredTest):
@@ -724,13 +739,15 @@ class EcmpTest(ConfiguredTest):
             "ingress.l3_fwd.l3_routing_classifier_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
             "ingress.l3_fwd.set_l3_admit",
-            []
+            [],
+            DEFAULT_PRIORITY
         )
         self.send_request_add_entry_to_action(
             "ingress.l3_fwd.l3_routing_classifier_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_b_mac, "\xff\xff\xff\xff\xff\xff")],
             "ingress.l3_fwd.set_l3_admit",
-            []
+            [],
+            DEFAULT_PRIORITY
         )
         # Create non-multipath nhops
         self.send_request_add_member(

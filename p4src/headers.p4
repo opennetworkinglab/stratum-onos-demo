@@ -114,6 +114,7 @@ header packet_in_header_t {
   @proto_tag(5) bit<7> padding2;
 }
 
+@not_extracted_in_egress // Tofino has a deparser and parser around the TM
 @controller_header("packet_out")
 header packet_out_header_t {
   @switchstack("field_type: P4_FIELD_TYPE_EGRESS_PORT")

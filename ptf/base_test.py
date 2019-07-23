@@ -17,7 +17,8 @@
 # Antonin Bas (antonin@barefootnetworks.com)
 #
 #
-
+import struct
+from StringIO import StringIO
 from collections import Counter
 from functools import wraps, partial
 import re
@@ -27,6 +28,8 @@ import time
 import Queue
 
 import ptf
+import scapy.packet
+import scapy.utils
 from ptf.base_tests import BaseTest
 from ptf import config
 import ptf.testutils as testutils
@@ -38,6 +41,34 @@ from p4.v1 import p4runtime_pb2
 from p4.v1 import p4runtime_pb2_grpc
 from p4.config.v1 import p4info_pb2
 import google.protobuf.text_format
+from ptf.dataplane import match_exp_pkt
+from ptf.packet import Ether
+
+
+def format_pkt_match(received_pkt, expected_pkt):
+    # Taken from PTF dataplane class
+    stdout_save = sys.stdout
+    try:
+        # The scapy packet dissection methods print directly to stdout,
+        # so we have to redirect stdout to a string.
+        sys.stdout = StringIO()
+
+        print "========== EXPECTED =========="
+        if isinstance(expected_pkt, scapy.packet.Packet):
+            scapy.packet.ls(expected_pkt)
+            print '--'
+        scapy.utils.hexdump(expected_pkt)
+        print "========== RECEIVED =========="
+        if isinstance(received_pkt, scapy.packet.Packet):
+            scapy.packet.ls(received_pkt)
+            print '--'
+        scapy.utils.hexdump(received_pkt)
+        print "=============================="
+
+        return sys.stdout.getvalue()
+    finally:
+        sys.stdout.close()
+        sys.stdout = stdout_save  # Restore the original stdout.
 
 # See https://gist.github.com/carymrobbins/8940382
 # functools.partialmethod is introduced in Python 3.4
@@ -567,11 +598,13 @@ class P4RuntimeTest(BaseTest):
     # list used for autocleanup, by passing store=False to write_request calls.
     #
 
-    def push_update_add_entry_to_action(self, req, t_name, mk, a_name, params):
+    def push_update_add_entry_to_action(self, req, t_name, mk, a_name, params,
+                                        priority=0):
         update = req.updates.add()
         update.type = p4runtime_pb2.Update.INSERT
         table_entry = update.entity.table_entry
         table_entry.table_id = self.get_table_id(t_name)
+        table_entry.priority = priority
         if mk is not None:
             self.set_match_key(table_entry, t_name, mk)
         else:
@@ -579,27 +612,31 @@ class P4RuntimeTest(BaseTest):
             update.type = p4runtime_pb2.Update.MODIFY
         self.set_action_entry(table_entry, a_name, params)
 
-    def send_request_add_entry_to_action(self, t_name, mk, a_name, params):
+    def send_request_add_entry_to_action(self, t_name, mk, a_name, params,
+                                         priority=0):
         req = self._get_new_write_request()
         req.device_id = self.device_id
-        self.push_update_add_entry_to_action(req, t_name, mk, a_name, params)
+        self.push_update_add_entry_to_action(req, t_name, mk, a_name, params,
+                                             priority)
         return req, self.write_request(req, store=(mk is not None))
 
-    def push_update_add_entry_to_member(self, req, t_name, mk, mbr_id):
+    def push_update_add_entry_to_member(self, req, t_name, mk, mbr_id,
+                                        priority=0):
         update = req.updates.add()
         update.type = p4runtime_pb2.Update.INSERT
         table_entry = update.entity.table_entry
         table_entry.table_id = self.get_table_id(t_name)
+        table_entry.priority = priority
         if mk is not None:
             self.set_match_key(table_entry, t_name, mk)
         else:
             table_entry.is_default_action = True
         table_entry.action.action_profile_member_id = mbr_id
 
-    def send_request_add_entry_to_member(self, t_name, mk, mbr_id):
+    def send_request_add_entry_to_member(self, t_name, mk, mbr_id, priority=0):
         req = self._get_new_write_request()
         req.device_id = self.device_id
-        self.push_update_add_entry_to_member(req, t_name, mk, mbr_id)
+        self.push_update_add_entry_to_member(req, t_name, mk, mbr_id, priority)
         return req, self.write_request(req, store=(mk is not None))
 
     def push_update_add_entry_to_group(self, req, t_name, mk, grp_id):
@@ -640,6 +677,19 @@ class P4RuntimeTest(BaseTest):
             msg_regexp = re.compile(msg_regexp)
         context = _AssertP4RuntimeErrorContext(self, code, msg_regexp)
         return context
+
+    def verify_packet_in(self, exp_pkt, exp_in_port, timeout=2):
+        pkt_in_msg = self.get_packet_in(timeout=timeout)
+        in_port_ = stringify(exp_in_port, 2)
+        # First metadata
+        rx_in_port_ = pkt_in_msg.metadata[0].value
+        if in_port_ != rx_in_port_:
+            rx_inport = struct.unpack("!h", rx_in_port_)[0]
+            self.fail("Wrong packet-in ingress port, expected {} but received was {}"
+                      .format(exp_in_port, rx_inport))
+        rx_pkt = Ether(pkt_in_msg.payload)
+        if not match_exp_pkt(exp_pkt, rx_pkt):
+            self.fail("Received packet-in is not the expected one\n" + format_pkt_match(rx_pkt, exp_pkt))
 
 # Add p4info object and object id "getters" for each object type; these are just
 # wrappers around P4RuntimeTest.get_obj and P4RuntimeTest.get_obj_id.

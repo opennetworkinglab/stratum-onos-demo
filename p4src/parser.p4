@@ -29,6 +29,7 @@
 #define IP_PROTOCOLS_ICMPv6 58
 
 #ifndef CPU_PORT
+// enforced by FPM / BCM
 #define CPU_PORT 0xFD
 #endif
 #define VLAN_DEPTH 2
