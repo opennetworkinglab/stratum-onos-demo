@@ -21,7 +21,7 @@ from mininet.topo import Topo
 
 from stratum import StratumBmv2Switch
 
-CPU_PORT = 255
+CPU_PORT = 253
 
 
 class CustomTopo(Topo):

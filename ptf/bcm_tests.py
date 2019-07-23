@@ -26,6 +26,7 @@ from ptf.mask import Mask
 from p4.v1 import p4runtime_pb2
 
 from google.rpc import code_pb2
+from ptf.packet import Ether
 
 from base_test import P4RuntimeTest, autocleanup, stringify, ipv4_to_binary, mac_to_binary
 
@@ -38,6 +39,14 @@ CPU_MIRROR_SESSION_ID = 511
 
 DEFAULT_PRIORITY = 10
 LOOPBACK_PORT = 13
+
+
+def pkt_mac_swap(pkt):
+    orig_dst = pkt[Ether].dst
+    pkt[Ether].dst = pkt[Ether].src
+    pkt[Ether].src = orig_dst
+    return pkt
+
 
 # Base class with configuration parameters
 class ConfiguredTest(P4RuntimeTest):
@@ -53,13 +62,17 @@ class ConfiguredTest(P4RuntimeTest):
         # FIXME make target independent
         self.port_a = self.swports(0)  # ptf_port in port map file
         self.port_b = self.swports(1)
+        self.port_c = self.swports(2)
         self.port_a_ = stringify(self.port_a, 2)
         self.port_b_ = stringify(self.port_b, 2)
+        self.port_c_ = stringify(self.port_c, 2)
         self.switch_port_loopback = stringify(LOOPBACK_PORT, 2)
         self.host_port_a_mac = mac_to_binary("3c:fd:fe:a8:ea:30")
         self.host_port_b_mac = mac_to_binary("3c:fd:fe:a8:ea:31")
+        self.host_port_c_mac = mac_to_binary("aa:bb:cc:dd:ee:ff")
         self.switch_port_a_mac = mac_to_binary("00:00:00:aa:aa:aa")
         self.switch_port_b_mac = mac_to_binary("00:00:00:bb:bb:bb")
+        self.switch_port_c_mac = mac_to_binary("00:00:00:cc:cc:cc")
 
 
 @testutils.group("bmv2")
@@ -101,6 +114,7 @@ class PktIoOutDirectToDataPlaneTest(ConfiguredTest):
         for p in pkts:
             self.testPacket(p)
 
+
 @testutils.group("bmv2")
 class PktIoOutToIngressPipelineAclRedirectToPortTest(ConfiguredTest):
     """
@@ -136,12 +150,13 @@ class PktIoOutToIngressPipelineAclRedirectToPortTest(ConfiguredTest):
         self.send_request_add_entry_to_action(
             "ingress.punt.punt_table",
             [self.Ternary("hdr.ethernet.ether_type", "\x08\x00", "\xFF\xFF")],
-            "set_egress_port",
+            "punt.set_egress_port",
             [("port", self.port_b_)],
             DEFAULT_PRIORITY
         )
         for p in pkts:
             self.testPacket(p)
+
 
 @testutils.group("bmv2")
 class PktIoOutToIngressPipelineAclPuntToCpuTest(ConfiguredTest):
@@ -249,6 +264,7 @@ class PktIoOutToIngressPipelineL3ForwardingTest(ConfiguredTest):
         self.send_packet_out(pkt_out)
         testutils.verify_packets(self, exp_pkt, [self.port_b]) # Breaks here
 
+
 @testutils.group("bmv2")
 class PacketIoOutDirectLoopbackPortAclTest(ConfiguredTest):
     """
@@ -277,6 +293,7 @@ class PacketIoOutDirectLoopbackPortAclTest(ConfiguredTest):
         self.send_packet_out(pkt_out)
         testutils.verify_no_other_packets(self)
         self.verify_packet_in(pkt, CPU_PORT)
+
 
 @testutils.group("bmv2")
 class PacketIoOutDirectLoopbackL3ForwardingTest(ConfiguredTest):
@@ -319,7 +336,7 @@ class PacketIoOutDirectLoopbackL3ForwardingTest(ConfiguredTest):
         self.send_packet_out(pkt_out)
         testutils.verify_packets(self, exp_pkt, [self.port_b])
 
-@testutils.group("bmv2")
+
 class PacketIoOutDirectLoopbackCloneToCpuTest(ConfiguredTest):
     """
     Send a packet directly to loopback port, L3 forward it to
@@ -509,7 +526,7 @@ class RedirectDataplaneToDataplaneTest(ConfiguredTest):
         self.send_request_add_entry_to_action(
             "ingress.punt.punt_table",
             [self.Ternary("hdr.ethernet.ether_type", "\x08\x00", "\x08\x00")],
-            "set_egress_port",
+            "punt.set_egress_port",
             [("port", self.port_a_)]
         )
         testutils.send_packet(self, self.port_a, pkt)
@@ -807,3 +824,150 @@ class EcmpTest(ConfiguredTest):
             self.fail("Port A never hit")
         if not hits[self.port_b]:
             self.fail("Port B never hit")
+
+
+@testutils.group("bmv2")
+@testutils.group("bridging")
+class ArpWithCloneTest(ConfiguredTest):
+    """Tests ability to broadcast ARP requests as well as cloning to CPU
+    (controller) for host discovery.
+    """
+
+    def runTest(self):
+        arp_pkt = testutils.simple_arp_packet(eth_src=self.host_port_a_mac)
+        self.testPacket(arp_pkt)
+
+    @autocleanup
+    def testPacket(self, pkt):
+        mcast_group_id = 10
+        mcast_ports = [self.port_a, self.port_b, self.port_c]
+
+        # Add multicast group.
+        self.add_multicast_group(
+            group_id=mcast_group_id,
+            ports=mcast_ports)
+
+        self.send_request_add_entry_to_action(
+            "ingress.l2_fwd.l2_broadcast_table",
+            [self.Exact("hdr.ethernet.dst_addr", "\xFF\xFF\xFF\xFF\xFF\xFF")],
+            "set_mcast_group_id",
+            [("group_id", stringify(mcast_group_id, 2))]
+        )
+
+        # Insert CPU clone session.
+        self.add_clone_session(
+            clone_id=CPU_MIRROR_SESSION_ID,
+            ports=[CPU_PORT])
+
+        self.send_request_add_entry_to_action(
+            "ingress.punt.punt_table",
+            [self.Ternary("hdr.ethernet.ether_type", "\x08\x06", "\xFF\xFF")],
+            "set_queue_and_clone_to_cpu",
+            [("queue_id", stringify(4, 1))],
+            DEFAULT_PRIORITY
+        )
+
+        for inport in mcast_ports:
+
+            # Send packet...
+            testutils.send_packet(self, inport, str(pkt))
+
+            # Pkt should be received on CPU via PacketIn...
+            # Expected P4Runtime PacketIn message.
+            self.verify_packet_in(pkt, inport)
+
+            # ...and on all ports except the ingress one.
+            verify_ports = set(mcast_ports)
+            verify_ports.discard(inport)
+            for port in verify_ports:
+                testutils.verify_packet(self, pkt, port)
+
+        testutils.verify_no_other_packets(self)
+
+
+@testutils.group("bmv2")
+@testutils.group("bridging")
+class ArpReplyWithCloneTest(ConfiguredTest):
+    """Tests ability to clone ARP replies and NDP Neighbor Advertisement
+    (NA) messages as well as unicast forwarding to requesting host.
+    """
+
+    def runTest(self):
+        #  Test With both ARP and NDP NS packets...
+        # op=1 request, op=2 relpy
+        arp_pkt = testutils.simple_arp_packet(
+            eth_src=self.host_port_a_mac, eth_dst=self.host_port_b_mac, arp_op=2)
+        self.testPacket(arp_pkt)
+
+    @autocleanup
+    def testPacket(self, pkt):
+
+        # L2 unicast entry, match on pkt's eth dst address.
+        self.send_request_add_entry_to_action(
+            "ingress.l2_fwd.l2_unicast_table",
+            [self.Exact("hdr.ethernet.dst_addr", self.host_port_b_mac)],
+            "l2_fwd.set_egress_port",
+            [("port", self.port_b_)]
+        )
+
+        # Insert CPU clone session.
+        self.add_clone_session(
+            clone_id=CPU_MIRROR_SESSION_ID,
+            ports=[CPU_PORT])
+
+        # Clone rule in ACL table for ARP packets.
+        self.send_request_add_entry_to_action(
+            "ingress.punt.punt_table",
+            [self.Ternary("hdr.ethernet.ether_type", "\x08\x06", "\xFF\xFF")],
+            "set_queue_and_clone_to_cpu",
+            [("queue_id", stringify(4, 1))],
+            DEFAULT_PRIORITY
+        )
+
+        testutils.send_packet(self, self.port_a, str(pkt))
+
+        # Pkt should be received on CPU via PacketIn...
+        self.verify_packet_in(pkt, self.port_a)
+
+        # ..and on port b as indicated by the L2 unicast rule.
+        testutils.verify_packet(self, pkt, self.port_b)
+
+
+@testutils.group("bmv2")
+@testutils.group("bridging")
+class L2UnicastTest(ConfiguredTest):
+    """Tests basic L2 unicast forwarding"""
+
+    def runTest(self):
+        # Test with different type of packets.
+        for pkt_type in ["tcp", "udp", "icmp"]:
+            pkt = getattr(testutils, "simple_%s_packet" % pkt_type)(
+                eth_src=self.host_port_a_mac, eth_dst=self.host_port_b_mac, pktlen=120)
+            self.testPacket(pkt)
+
+    @autocleanup
+    def testPacket(self, pkt):
+
+        # L2 unicast entries
+        self.send_request_add_entry_to_action(
+            "ingress.l2_fwd.l2_unicast_table",
+            [self.Exact("hdr.ethernet.dst_addr", self.host_port_a_mac)],
+            "l2_fwd.set_egress_port",
+            [("port", self.port_a_)]
+        )
+        self.send_request_add_entry_to_action(
+            "ingress.l2_fwd.l2_unicast_table",
+            [self.Exact("hdr.ethernet.dst_addr", self.host_port_b_mac)],
+            "l2_fwd.set_egress_port",
+            [("port", self.port_b_)]
+        )
+
+        # Test bidirectional forwarding by swapping MAC addresses on the pkt
+        pkt2 = pkt_mac_swap(pkt.copy())
+
+        # Send and verify.
+        testutils.send_packet(self, self.port_a, str(pkt))
+        testutils.send_packet(self, self.port_b, str(pkt2))
+
+        testutils.verify_each_packet_on_each_port(
+            self, [pkt, pkt2], [self.port_b, self.port_a])

@@ -574,6 +574,19 @@ class P4RuntimeTest(BaseTest):
         self.push_update_set_group_membership(req, ap_name, grp_id, mbr_ids)
         return req, self.write_request(req, store=False)
 
+    def add_multicast_group(self, group_id, ports):
+        req = self._get_new_write_request()
+        update = req.updates.add()
+        update.type = p4runtime_pb2.Update.INSERT
+        pre_entry = update.entity.packet_replication_engine_entry
+        mg_entry = pre_entry.multicast_group_entry
+        mg_entry.multicast_group_id = group_id
+        for port in ports:
+            replica = mg_entry.replicas.add()
+            replica.egress_port = port
+            replica.instance = 0
+        return req, self.write_request(req)
+
     def add_clone_session(self, clone_id, ports):
         req = self._get_new_write_request()
         update = req.updates.add()

@@ -24,7 +24,7 @@ control punt(inout parsed_packet_t hdr,
     local_metadata.cpu_cos_queue_id = queue_id;
     local_metadata.egress_spec_at_punt_match = standard_metadata.egress_spec;
     clone3(CloneType.I2E, CPU_MIRROR_SESSION_ID,
-                        {standard_metadata.ingress_port});
+           {standard_metadata.ingress_port});
     ingress_port_meter.read(local_metadata.color);
     punt_packet_counter.count();
   }
@@ -152,20 +152,32 @@ control l3_fwd(inout parsed_packet_t hdr,
   }
 } // end l3_fwd
 
-control mcast(inout parsed_packet_t hdr,
-                inout local_metadata_t local_metadata,
-                inout standard_metadata_t standard_metadata) {
+control l2_fwd(inout parsed_packet_t hdr,
+               inout local_metadata_t local_metadata,
+               inout standard_metadata_t standard_metadata) {
 
   action set_mcast_group_id(bit<16> group_id) {
     standard_metadata.mcast_grp = group_id;
+    local_metadata.is_mcast = 1w1;
+  }
+
+  action set_egress_port(PortNum port) {
+    standard_metadata.egress_spec = port;
+  }
+
+  table l2_unicast_table {
+    key = {
+        hdr.ethernet.dst_addr : exact;
+    }
+    actions = {
+        set_egress_port;
+    }
   }
 
   @switchstack("pipeline_stage: INGRESS_ACL")
-  table mcast_table {
+  table l2_broadcast_table {
     key = {
-      hdr.ethernet.src_addr : ternary;
-      hdr.ethernet.dst_addr : ternary;
-      hdr.ethernet.ether_type : exact;
+      hdr.ethernet.dst_addr : exact;
     }
     actions = {
       set_mcast_group_id;
@@ -173,9 +185,11 @@ control mcast(inout parsed_packet_t hdr,
   }
 
   apply {
-    mcast_table.apply();
+    if (!l2_broadcast_table.apply().hit) {
+        l2_unicast_table.apply();
+    }
   }
-} // end mcast
+}
 
 control ingress(inout parsed_packet_t hdr,
                 inout local_metadata_t local_metadata,
@@ -188,7 +202,9 @@ control ingress(inout parsed_packet_t hdr,
     if (standard_metadata.egress_spec == 0 ||
             standard_metadata.egress_spec == LOOPBACK_PORT) {
         punt.apply(hdr, local_metadata, standard_metadata);
-        mcast.apply(hdr, local_metadata, standard_metadata);
+        // FIXME: l2_fwd should be applied only if packet is not to be routes
+        //     (i.e. table miss on l3 routing classifier)
+        l2_fwd.apply(hdr, local_metadata, standard_metadata);
         l3_fwd.apply(hdr, local_metadata, standard_metadata);
     }
   }
@@ -204,6 +220,14 @@ control egress(inout parsed_packet_t hdr,
             hdr.packet_in.target_egress_port = local_metadata.egress_spec_at_punt_match;
             // No need to process through the rest of the pipeline.
             exit;
+        }
+
+        if (local_metadata.is_mcast == 1w1) {
+            // Ingress port pruuning for replicated multicast packets.
+            if (standard_metadata.ingress_port == standard_metadata.egress_port) {
+                mark_to_drop(standard_metadata);
+                exit;
+            }
         }
     }
 } // end egress
