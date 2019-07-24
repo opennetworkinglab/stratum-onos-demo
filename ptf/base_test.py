@@ -693,11 +693,11 @@ class P4RuntimeTest(BaseTest):
 
     def verify_packet_in(self, exp_pkt, exp_in_port, timeout=2):
         pkt_in_msg = self.get_packet_in(timeout=timeout)
-        in_port_ = stringify(exp_in_port, 2)
+        in_port_ = stringify(exp_in_port, 4)
         # First metadata
-        rx_in_port_ = pkt_in_msg.metadata[0].value
+        rx_in_port_ = [x for x in pkt_in_msg.metadata if x.metadata_id == 1][0].value
         if in_port_ != rx_in_port_:
-            rx_inport = struct.unpack("!h", rx_in_port_)[0]
+            rx_inport = struct.unpack("!i", rx_in_port_)[0]
             self.fail("Wrong packet-in ingress port, expected {} but received was {}"
                       .format(exp_in_port, rx_inport))
         rx_pkt = Ether(pkt_in_msg.payload)
