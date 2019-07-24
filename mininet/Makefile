@@ -2,9 +2,8 @@ app_name := org.stratumproject.fabric-demo
 onos_url := http://localhost:8181/onos
 onos_curl := curl --fail -sSL --user onos:rocks --noproxy localhost
 
-build:
-	docker-compose build mininet
-	docker-compose pull onos
+pull:
+	docker-compose pull
 
 start:
 	docker-compose up -d

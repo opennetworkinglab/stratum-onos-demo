@@ -36,7 +36,7 @@ tofino:
 	###
 	mkdir -p ${build_dir}/tofino
 	${p4c_tofino} -g -o ${build_dir}/tofino \
-		--p4runtime-files ${build_dir}/bmv2/p4info.txt max.p4
+		--p4runtime-files ${build_dir}/tofino/p4info.txt max.p4
 
 fpm:
 	### Generate pipeline_config.bin/.txt and p4info.txt

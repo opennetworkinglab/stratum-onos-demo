@@ -41,6 +41,9 @@ import java.util.stream.Collectors;
 
 import static org.onosproject.net.pi.model.PiPipeconf.ExtensionType.BMV2_JSON;
 import static org.onosproject.net.pi.model.PiPipeconf.ExtensionType.P4_INFO_TEXT;
+import static org.onosproject.net.pi.model.PiPipeconf.ExtensionType.STRATUM_FPM_BIN;
+import static org.onosproject.net.pi.model.PiPipeconf.ExtensionType.TOFINO_BIN;
+import static org.onosproject.net.pi.model.PiPipeconf.ExtensionType.TOFINO_CONTEXT_JSON;
 
 /**
  * Component that builds and register the pipeconf at app activation.
@@ -52,6 +55,9 @@ public final class PipeconfLoader {
 
     private static final String BMV2_P4INFO_PATH = "/p4c-out/bmv2/p4info.txt";
     private static final String BMV2_JSON_PATH = "/p4c-out/bmv2/bmv2.json";
+    private static final String FPM_BIN_PATH = "/p4c-out/fpm/pipeline_config.bin";
+    private static final String TOFINO_BIN_PATH = "/p4c-out/tofino/pipe/tofino.bin";
+    private static final String TOFINO_CTX_PATH = "/p4c-out/tofino/pipe/context.json";
 
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY)
@@ -84,7 +90,6 @@ public final class PipeconfLoader {
     private PiPipeconf buildPipeconf() throws P4InfoParserException {
 
         final URL p4InfoUrl = PipeconfLoader.class.getResource(BMV2_P4INFO_PATH);
-        final URL bmv2JsonUrlUrl = PipeconfLoader.class.getResource(BMV2_JSON_PATH);
         final PiPipelineModel pipelineModel = P4InfoParser.parse(p4InfoUrl);
 
         return DefaultPiPipeconf.builder()
@@ -93,7 +98,14 @@ public final class PipeconfLoader {
                 .addBehaviour(PiPipelineInterpreter.class, InterpreterImpl.class)
                 .addBehaviour(Pipeliner.class, PipelinerImpl.class)
                 .addExtension(P4_INFO_TEXT, p4InfoUrl)
-                .addExtension(BMV2_JSON, bmv2JsonUrlUrl)
+                .addExtension(BMV2_JSON,
+                        PipeconfLoader.class.getResource(BMV2_JSON_PATH))
+                .addExtension(STRATUM_FPM_BIN,
+                        PipeconfLoader.class.getResource(FPM_BIN_PATH))
+                .addExtension(TOFINO_BIN,
+                        PipeconfLoader.class.getResource(TOFINO_BIN_PATH))
+                .addExtension(TOFINO_CONTEXT_JSON,
+                        PipeconfLoader.class.getResource(TOFINO_CTX_PATH))
                 .build();
     }
 

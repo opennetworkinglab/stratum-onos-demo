@@ -25,7 +25,7 @@ test network.
 
 | Make command        | Description                                            |
 |---------------------|------------------------------------------------------- |
-| `make build`        | Build/pull all Docker images                           |
+| `make pull`         | Pull all Docker images                                 |
 | `make start`        | Start test network containers (`mininet` and `onos`)   |
 | `make stop`         | Stops and remove all containers                        |
 | `make onos-cli`     | Access the ONOS CLI (password: `rocks`, Ctrl+D to exit)|
@@ -41,9 +41,10 @@ test network.
 ## Walktrough
 
 To get started, use the following commands to start the test network and show
-the ONOS log:
+the ONOS log (make sure to pull the latest images):
 
 ```bash
+make pull
 make start
 make onos-log
 ```
