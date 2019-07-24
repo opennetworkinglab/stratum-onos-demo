@@ -124,6 +124,7 @@ control l3_fwd(inout parsed_packet_t hdr,
       hdr.ipv4_base.ttl = hdr.ipv4_base.ttl - 1;
   }
 
+  @max_group_size(8)
   action_selector(HashAlgorithm.crc16, 32w1024, 32w14) wcmp_action_profile;
 
   @switchstack("pipeline_stage: L3_LPM")
@@ -159,10 +160,12 @@ control l2_fwd(inout parsed_packet_t hdr,
   action set_mcast_group_id(bit<16> group_id) {
     standard_metadata.mcast_grp = group_id;
     local_metadata.is_mcast = 1w1;
+    local_metadata.l2_hit = 1w1;
   }
 
   action set_egress_port(PortNum port) {
     standard_metadata.egress_spec = port;
+    local_metadata.l2_hit = 1w1;
   }
 
   table l2_unicast_table {
@@ -205,7 +208,10 @@ control ingress(inout parsed_packet_t hdr,
         // FIXME: l2_fwd should be applied only if packet is not to be routes
         //     (i.e. table miss on l3 routing classifier)
         l2_fwd.apply(hdr, local_metadata, standard_metadata);
-        l3_fwd.apply(hdr, local_metadata, standard_metadata);
+        // Packet was not bridged.
+        if (local_metadata.l2_hit != 1w1) {
+            l3_fwd.apply(hdr, local_metadata, standard_metadata);
+        }
     }
   }
 } // end ingress
@@ -223,7 +229,7 @@ control egress(inout parsed_packet_t hdr,
         }
 
         if (local_metadata.is_mcast == 1w1) {
-            // Ingress port pruuning for replicated multicast packets.
+            // Ingress port pruning for replicated multicast packets.
             if (standard_metadata.ingress_port == standard_metadata.egress_port) {
                 mark_to_drop(standard_metadata);
                 exit;
