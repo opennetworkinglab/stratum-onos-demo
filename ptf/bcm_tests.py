@@ -385,7 +385,7 @@ class PacketIoOutDirectLoopbackCloneToCpuTest(ConfiguredTest):
         egress_physical_port.value = stringify(LOOPBACK_PORT, 2)
         self.send_packet_out(pkt_out)
         testutils.verify_packets(self, exp_pkt, [self.port_b])
-        self.verify_packet_in(exp_pkt, CPU_PORT)
+        self.verify_packet_in(pkt, LOOPBACK_PORT)
 
 
 class PktIoOutDirectToCPUTest(ConfiguredTest):
