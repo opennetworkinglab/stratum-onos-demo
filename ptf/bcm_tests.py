@@ -966,8 +966,7 @@ class L2UnicastTest(ConfiguredTest):
         pkt2 = pkt_mac_swap(pkt.copy())
 
         # Send and verify.
-        testutils.send_packet(self, self.port_a, str(pkt))
-        testutils.send_packet(self, self.port_b, str(pkt2))
-
+        testutils.send_packet(self, self.port_a, pkt)
+        testutils.send_packet(self, self.port_b, pkt2)
         testutils.verify_each_packet_on_each_port(
             self, [pkt, pkt2], [self.port_b, self.port_a])

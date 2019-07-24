@@ -168,6 +168,7 @@ control l2_fwd(inout parsed_packet_t hdr,
     local_metadata.l2_hit = 1w1;
   }
 
+  @switchstack("pipeline_stage: L2")
   table l2_unicast_table {
     key = {
         hdr.ethernet.dst_addr : exact;
@@ -192,7 +193,7 @@ control l2_fwd(inout parsed_packet_t hdr,
         l2_unicast_table.apply();
     }
   }
-}
+} // end l2_fwd
 
 control ingress(inout parsed_packet_t hdr,
                 inout local_metadata_t local_metadata,
