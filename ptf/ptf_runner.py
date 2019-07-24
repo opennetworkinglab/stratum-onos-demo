@@ -90,7 +90,8 @@ def check_ifaces(ifaces):
     Checks that required interfaces exist.
     '''
     ifconfig_out = subprocess.check_output(['ifconfig'])
-    iface_list = re.findall(r'^(\S+)', ifconfig_out, re.S | re.M)
+
+    iface_list = re.findall(r'^([a-zA-Z0-9]+)', ifconfig_out, re.S | re.M)
     present_ifaces = set(iface_list)
     ifaces = set(ifaces)
     return ifaces <= present_ifaces
@@ -113,7 +114,7 @@ def update_config(config_path, p4info_path, grpc_addr, device_id):
     with StreamChannelWrapper(stub) as stream:    
         stream.put(req)
         resp = stream.get()
-        print resp
+        # print resp
         if not resp.HasField("arbitration"):
             error("Failed to establish handshake")
 
@@ -139,20 +140,18 @@ def update_config(config_path, p4info_path, grpc_addr, device_id):
         return True
 
 def run_test(config_path, p4info_path, grpc_addr, device_id,
-             ptfdir, port_map_path, extra_args=[]):
+             testdir, port_map_path, extra_args=[]):
     '''
     Runs PTF tests included in provided directory.
     Device must be running and configfured with appropriate P4 program.
     '''
     # TODO: check schema?
-    # "p4_port" is ignored for now, we assume that ports are provided by
-    # increasing values of p4_port, in the range [0, NUM_IFACES[.
     port_map = OrderedDict()
     with open(port_map_path, 'r') as port_map_f:
         port_list = json.load(port_map_f)
         for entry in port_list:
-            ptf_port = entry["ptf_port"]
-            p4_port = entry["p4_port"]  # ignored
+            ptf_port = entry["ptf_port"] # ignored
+            p4_port = entry["p4_port"]
             iface_name = entry["iface_name"]
             port_map[p4_port] = iface_name
 
@@ -171,7 +170,7 @@ def run_test(config_path, p4info_path, grpc_addr, device_id,
     for iface_idx, iface_name in port_map.items():
         ifaces.extend(['-i', '{}@{}'.format(iface_idx, iface_name)])
     cmd = ['ptf']
-    cmd.extend(['--test-dir', ptfdir])
+    cmd.extend(['--test-dir', testdir])
     cmd.extend(ifaces)
     test_params = 'p4info=\'{}\''.format(p4info_path)
     test_params += ';grpcaddr=\'{}\''.format(grpc_addr)
@@ -210,7 +209,7 @@ def main():
                         help='Address to use to connect to P4 Runtime server')
     parser.add_argument('--device-id', type=int, default=0,
                         help='Device id for device under test')
-    parser.add_argument('--ptfdir', type=str, required=True,
+    parser.add_argument('--testdir', type=str, required=True,
                         help='Directory containing PTF tests')
     parser.add_argument('--port-map', type=str, required=True,
                         help='Path to JSON port mapping')
@@ -238,7 +237,7 @@ def main():
     if not success:
         sys.exit(2)
     success = run_test(args.device_config, args.p4info,
-                       args.grpc_addr, args.device_id, args.ptfdir,
+                       args.grpc_addr, args.device_id, args.testdir,
                        args.port_map, unknown_args)
     if not success:
         sys.exit(3)

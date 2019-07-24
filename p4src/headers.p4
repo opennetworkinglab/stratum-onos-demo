@@ -114,6 +114,7 @@ header packet_in_header_t {
   @proto_tag(5) bit<7> padding2;
 }
 
+@not_extracted_in_egress // Tofino has a deparser and parser around the TM
 @controller_header("packet_out")
 header packet_out_header_t {
   @switchstack("field_type: P4_FIELD_TYPE_EGRESS_PORT")
@@ -143,5 +144,6 @@ struct local_metadata_t {
     bit<1> l3_admit;
     @switchstack("field_type: P4_FIELD_TYPE_VLAN_VID")
     bit<12> dst_vlan;
+    bit<1> is_mcast;
 }
 #endif // P4_SPEC_HEADERS_P4_
