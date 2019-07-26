@@ -29,7 +29,7 @@ bmv2: bmv2-pp
 	mkdir -p ${build_dir}/bmv2
 	${p4c_bmv2} -o ${build_dir}/bmv2/bmv2.json \
 		--p4runtime-files ${build_dir}/bmv2/p4info.txt max.p4
-	echo ${cpu_port_bmv2} >> ${build_dir}/bmv2/cpu_port.txt
+	echo ${cpu_port_bmv2} > ${build_dir}/bmv2/cpu_port.txt
 
 bmv2-pp:
 	### Generate preprocessed source (for debugging)
@@ -43,7 +43,7 @@ tofino-base:
 	mkdir -p ${build_dir}/tofino-$(NAME)
 	${p4c_tofino} -g -o ${build_dir}/tofino-$(NAME) -DCPU_PORT=$(CPU_PORT) \
 		--p4runtime-files ${build_dir}/tofino-$(NAME)/p4info.txt max.p4
-	echo $(CPU_PORT) >> ${build_dir}/tofino-$(NAME)/cpu_port.txt
+	echo $(CPU_PORT) > ${build_dir}/tofino-$(NAME)/cpu_port.txt
 
 tofino-mavericks:
 	$(MAKE) tofino-base NAME=mavericks CPU_PORT=${cpu_port_mavericks}
@@ -70,7 +70,7 @@ fpm:
 		--p4c_annotation_map_files=max_table_map.pb.txt,max_field_map.pb.txt \
 		--target_parser_map_file=standard_parser_map.pb.txt \
 		--slice_map_file=sliced_field_map.pb.txt
-	echo ${cpu_port_fpm} >> ${build_dir}/fpm/cpu_port.txt
+	echo ${cpu_port_fpm} > ${build_dir}/fpm/cpu_port.txt
 
 p4i-start:
 	### Starting p4i container...
