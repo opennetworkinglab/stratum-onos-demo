@@ -13,7 +13,7 @@
       },
       "device:leaf2": {
         "basic": {
-          "managementAddress": "grpc://10.128.13.241:28001?device_id=1",
+          "managementAddress": "grpc://10.128.13.241:28000?device_id=1",
           "driver": "stratum-fpm",
           "pipeconf": "org.stratumproject.fabric-demo.fpm"
         },
