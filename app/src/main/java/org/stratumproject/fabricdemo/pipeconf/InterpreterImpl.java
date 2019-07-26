@@ -27,20 +27,25 @@ import org.onosproject.net.Port;
 import org.onosproject.net.PortNumber;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.driver.AbstractHandlerBehaviour;
+import org.onosproject.net.driver.DriverHandler;
 import org.onosproject.net.flow.TrafficTreatment;
 import org.onosproject.net.flow.criteria.Criterion;
 import org.onosproject.net.packet.DefaultInboundPacket;
 import org.onosproject.net.packet.InboundPacket;
 import org.onosproject.net.packet.OutboundPacket;
-import org.onosproject.net.pi.model.PiMatchFieldId;
-import org.onosproject.net.pi.model.PiPacketMetadataId;
-import org.onosproject.net.pi.model.PiPipelineInterpreter;
-import org.onosproject.net.pi.model.PiTableId;
+import org.onosproject.net.pi.model.*;
 import org.onosproject.net.pi.runtime.PiAction;
 import org.onosproject.net.pi.runtime.PiPacketMetadata;
 import org.onosproject.net.pi.runtime.PiPacketOperation;
+import org.onosproject.net.pi.service.PiPipeconfService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.stratumproject.fabricdemo.AppConstants;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.List;
@@ -63,6 +68,7 @@ import static org.onosproject.net.pi.model.PiPacketOperationType.PACKET_OUT;
 public class InterpreterImpl extends AbstractHandlerBehaviour
         implements PiPipelineInterpreter {
 
+    static final Logger log = LoggerFactory.getLogger(InterpreterImpl.class);
 
     // From v1model.p4
     private static final int V1MODEL_PORT_BITWIDTH = 9;
@@ -79,6 +85,43 @@ public class InterpreterImpl extends AbstractHandlerBehaviour
                     .put(Criterion.Type.IP_PROTO, "hdr.ipv4_base.protocol")
                     .put(Criterion.Type.ICMPV4_CODE, "local_metadata.icmp_code")
                     .build();
+
+    // Stores the CPU port of the device.
+    private Optional<Integer> cpuPort;
+
+    @Override
+    public void setHandler(DriverHandler handler) {
+        super.setHandler(handler);
+        // Default CPU port
+        cpuPort = Optional.empty();
+
+        // Try getting the CPU port from file
+        final DeviceId deviceId = handler().data().deviceId();
+        final PiPipeconfService pipeconfService = handler().get(PiPipeconfService.class);
+        final PiPipeconf pipeconf = pipeconfService.getPipeconf(handler().data().deviceId()).orElse(null);
+
+        if (pipeconf == null) {
+            log.warn("Unable to find the pipeconf of the device {}", deviceId);
+            return;
+        }
+
+        InputStream cpuPortStream = pipeconf.extension(PiPipeconf.ExtensionType.CPU_PORT_TXT).orElse(null);
+
+        if (cpuPortStream == null) {
+            log.warn("No CPU port text file exists in pipeconf {}", pipeconf.id());
+            return;
+        }
+
+        String cpuPortText = "";
+        try (final BufferedReader reader = new BufferedReader(new InputStreamReader(cpuPortStream))) {
+            cpuPortText = reader.readLine();
+            cpuPort = Optional.of(Integer.parseInt(cpuPortText));
+        } catch (IOException e) {
+            log.warn("Unable to read text from CPU port file", e);
+        } catch (NumberFormatException ne) {
+            log.error("Invalid CPU port format {}", cpuPortText);
+        }
+    }
 
     /**
      * Returns a collection of PI packet operations populated with metadata
@@ -220,8 +263,9 @@ public class InterpreterImpl extends AbstractHandlerBehaviour
 
     @Override
     public Optional<Integer> mapLogicalPortNumber(PortNumber port) {
+
         if (CONTROLLER.equals(port)) {
-            return Optional.of(AppConstants.CPU_PORT_ID);
+            return cpuPort;
         } else {
             return Optional.empty();
         }
