@@ -26,4 +26,5 @@ public class AppConstants {
     public static final int DEFAULT_CLEAN_UP_RETRY_TIMES = 10;
 
     public static final int CPU_CLONE_SESSION_ID = 511;
+    public static final int INPORT_META_BITWIDTH = 9;
 }

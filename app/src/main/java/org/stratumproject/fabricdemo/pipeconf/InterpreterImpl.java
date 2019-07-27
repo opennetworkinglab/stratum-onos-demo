@@ -253,7 +253,12 @@ public class InterpreterImpl extends AbstractHandlerBehaviour
         }
 
         // 2. Get ingress port
-        final ImmutableByteSequence portBytes = inportMetadata.get().value();
+        final ImmutableByteSequence portBytes;
+        try {
+            portBytes = inportMetadata.get().value().fit(AppConstants.INPORT_META_BITWIDTH);
+        } catch (ImmutableByteSequence.ByteSequenceTrimException e) {
+            throw new PiInterpreterException(e.getMessage());
+        }
         final short portNum = portBytes.asReadOnlyBuffer().getShort();
         final ConnectPoint receivedFrom = new ConnectPoint(
                 deviceId, PortNumber.portNumber(portNum));
