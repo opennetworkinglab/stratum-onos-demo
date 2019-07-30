@@ -22,6 +22,17 @@
         "isSpine": false
       }
     },
+    "device:leaf3": {
+      "basic": {
+        "managementAddress": "grpc://10.128.100.92:28000?device_id=1",
+        "driver": "stratum-fpm",
+        "pipeconf": "org.stratumproject.fabric-demo.fpm"
+      },
+      "fabricDeviceConfig": {
+        "myStationMac": "00:aa:00:00:00:03",
+        "isSpine": false
+      }
+    },
     "device:spine1": {
       "basic": {
         "managementAddress": "grpc://10.128.13.232:28000?device_id=1",
@@ -62,19 +73,19 @@
         }
       ]
     },
-    "device:leaf2/34": {
+    "device:leaf2/49": {
       "interfaces": [
         {
-          "name": "leaf2-34",
+          "name": "leaf2-49",
           "ips": ["10.0.2.100/24"]
         }
       ]
     },
-    "device:leaf2/35": {
+    "device:leaf3/49": {
       "interfaces": [
         {
-          "name": "leaf2-35",
-          "ips": ["10.0.2.100/24"]
+          "name": "leaf2-49",
+          "ips": ["10.0.3.100/24"]
         }
       ]
     }
