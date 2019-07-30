@@ -1,0 +1,47 @@
+description: "Chassis config for spine 2"
+chassis {
+  platform: PLT_P4_SOFT_SWITCH
+  name: "Spine 2 - Delta AG9064v1"
+}
+nodes {
+  id: 1
+  slot: 1
+  index: 1
+}
+singleton_ports {
+  id: 48
+  port: 1
+  speed_bps: 100000000000
+  config_params {
+    admin_state: ADMIN_STATE_ENABLED
+    autoneg: TRI_STATE_FALSE
+  }
+  node: 1
+  name: "1/0"
+  slot: 1
+}
+
+singleton_ports {
+  id: 52
+  port: 2
+  speed_bps: 100000000000
+  config_params {
+    admin_state: ADMIN_STATE_ENABLED
+    autoneg: TRI_STATE_FALSE
+  }
+  node: 1
+  name: "2/0"
+  slot: 1
+}
+singleton_ports {
+  id: 444
+  port: 3
+  speed_bps: 100000000000
+  config_params {
+    admin_state: ADMIN_STATE_ENABLED
+    autoneg: TRI_STATE_FALSE
+  }
+  node: 1
+  name: "3/0"
+  slot: 1
+}
