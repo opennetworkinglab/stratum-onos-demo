@@ -250,7 +250,7 @@ public class Ipv4RoutingComponent {
                                 nextHopMac.toBytes()))
                         .withParameter(new PiActionParam(
                                 PiActionParamId.of("dst_vlan"),
-                                0))
+                                1))
                         .build();
 
                 actions.add(action);
