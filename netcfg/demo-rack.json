@@ -65,43 +65,43 @@
         }
       ]
     },
-    "device:leaf1/44": {
+    "device:leaf2/58": {
       "interfaces": [
         {
-          "name": "leaf1-44",
-          "ips": ["10.0.1.100/24"]
-        }
-      ]
-    },
-    "device:leaf2/49": {
-      "interfaces": [
-        {
-          "name": "leaf2-49",
+          "name": "leaf2-58",
           "ips": ["10.0.2.100/24"]
         }
       ]
     },
-    "device:leaf3/49": {
+    "device:leaf2/62": {
       "interfaces": [
         {
-          "name": "leaf2-49",
+          "name": "leaf2-62",
+          "ips": ["10.0.2.100/24"]
+        }
+      ]
+    },
+    "device:leaf3/58": {
+      "interfaces": [
+        {
+          "name": "leaf3-58",
           "ips": ["10.0.3.100/24"]
         }
       ]
     }
   },
   "hosts": {
-    "3c:fd:fe:9d:f0:38/None": {
+    "3c:fd:fe:9d:f1:48/None": {
       "basic": {
         "name": "h1"
       }
     },
-    "3c:fd:fe:9d:f0:39/None": {
+    "3c:fd:fe:9d:f0:38/None": {
       "basic": {
         "name": "h2"
       }
     },
-    "3c:fd:fe:9d:f1:48/None": {
+    "3c:fd:fe:9d:f0:39/None": {
       "basic": {
         "name": "h3"
       }

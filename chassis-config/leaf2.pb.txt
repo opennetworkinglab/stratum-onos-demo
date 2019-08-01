@@ -10,15 +10,15 @@ nodes {
   index: 1
 }
 singleton_ports {
-  id: 49
+  id: 50
   name: "1/0"
   slot: 1
   port: 1
-  speed_bps: 40000000000
+  speed_bps: 100000000000
   node: 1
 }
 singleton_ports {
-  id: 53
+  id: 54
   name: "2/0"
   slot: 1
   port: 2
@@ -26,10 +26,27 @@ singleton_ports {
   node: 1
 }
 singleton_ports {
-  id: 34
+  id: 58
   name: "3/0"
   slot: 1
   port: 3
-  speed_bps: 100000000000
+  speed_bps: 40000000000
+  node: 1
+}
+singleton_ports {
+  id: 62
+  name: "4/0"
+  slot: 1
+  port: 4
+  speed_bps: 40000000000
+  node: 1
+}
+# for debugging
+singleton_ports {
+  id: 72
+  name: "6/0"
+  slot: 1
+  port: 6
+  speed_bps: 40000000000
   node: 1
 }
