@@ -98,30 +98,44 @@ control l3_fwd(inout parsed_packet_t hdr,
   action drop() { mark_to_drop(standard_metadata); }
 
   action set_l3_admit() {
-      local_metadata.l3_admit = 1;
+    local_metadata.l3_admit = 1;
+  }
+
+  action set_mcast_group_id(bit<16> group_id) {
+    standard_metadata.mcast_grp = group_id;
   }
 
   @switchstack("pipeline_stage: L2")
   table l3_routing_classifier_table {
-      key = {
-          hdr.ethernet.dst_addr : ternary;
-      }
-      actions = {
-          set_l3_admit;
-          nop;
-      }
-      default_action = nop();
+    key = {
+      hdr.ethernet.dst_addr : ternary;
+    }
+    actions = {
+      set_l3_admit;
+      nop;
+    }
+    default_action = nop();
+  }
+
+  @switchstack("pipeline_stage: L2")
+  table multicast_table {
+    key = {
+      hdr.ethernet.dst_addr : ternary;
+    }
+    actions = {
+      set_mcast_group_id;
+    }
   }
 
   action set_nexthop(PortNum port,
                      EthernetAddress smac,
                      EthernetAddress dmac,
                      bit<12> dst_vlan) {
-      standard_metadata.egress_spec = port;
-      local_metadata.dst_vlan = dst_vlan;
-      hdr.ethernet.src_addr = smac;
-      hdr.ethernet.dst_addr = dmac;
-      hdr.ipv4_base.ttl = hdr.ipv4_base.ttl - 1;
+    standard_metadata.egress_spec = port;
+    local_metadata.dst_vlan = dst_vlan;
+    hdr.ethernet.src_addr = smac;
+    hdr.ethernet.dst_addr = dmac;
+    hdr.ipv4_base.ttl = hdr.ipv4_base.ttl - 1;
   }
 
   @max_group_size(8)
@@ -129,27 +143,36 @@ control l3_fwd(inout parsed_packet_t hdr,
 
   @switchstack("pipeline_stage: L3_LPM")
   table l3_fwd_table {
-      key = {
-          local_metadata.vrf_id      : exact;
-          hdr.ipv4_base.dst_addr     : lpm;
-          // hdr.ipv4_base.dst_addr  : ternary;
-          hdr.ipv4_base.src_addr     : selector;
-          hdr.ipv4_base.protocol     : selector;
-          local_metadata.l4_src_port : selector;
-          local_metadata.l4_dst_port : selector;
-      }
-      actions = {
-          set_nexthop;
-          nop;
-          drop;
-      }
-      const default_action = nop();
-      implementation = wcmp_action_profile;
+    key = {
+      local_metadata.vrf_id      : exact;
+      hdr.ipv4_base.dst_addr     : lpm;
+      // hdr.ipv4_base.dst_addr  : ternary;
+      hdr.ipv4_base.src_addr     : selector;
+      hdr.ipv4_base.protocol     : selector;
+      local_metadata.l4_src_port : selector;
+      local_metadata.l4_dst_port : selector;
+    }
+    actions = {
+      set_nexthop;
+      nop;
+      drop;
+    }
+    const default_action = nop();
+    implementation = wcmp_action_profile;
   }
 
   apply {
-      l3_routing_classifier_table.apply();
-      l3_fwd_table.apply();
+    if (!multicast_table.apply().hit) {
+      if (l3_routing_classifier_table.apply().hit) {
+        if (hdr.ipv4_base.isValid()) {
+          l3_fwd_table.apply();
+          if (hdr.ipv4_base.ttl == 0) {
+            mark_to_drop(standard_metadata);
+            return;
+          }
+        }
+      }
+    }
   }
 } // end l3_fwd
 
@@ -159,39 +182,36 @@ control l2_fwd(inout parsed_packet_t hdr,
 
   action set_mcast_group_id(bit<16> group_id) {
     standard_metadata.mcast_grp = group_id;
-    local_metadata.is_mcast = 1w1;
-    local_metadata.l2_hit = 1w1;
   }
 
   action set_egress_port(PortNum port) {
     standard_metadata.egress_spec = port;
-    local_metadata.l2_hit = 1w1;
   }
 
   @switchstack("pipeline_stage: L2")
   table l2_unicast_table {
     key = {
-        hdr.ethernet.dst_addr : exact;
-    }
-    actions = {
-        set_egress_port;
-    }
-  }
-
-  @switchstack("pipeline_stage: INGRESS_ACL")
-  table l2_broadcast_table {
-    key = {
       hdr.ethernet.dst_addr : exact;
     }
     actions = {
-      set_mcast_group_id;
+      set_egress_port;
     }
   }
 
+  // @switchstack("pipeline_stage: INGRESS_ACL")
+  // table l2_broadcast_table {
+  //   key = {
+  //     hdr.ethernet.dst_addr : exact;
+  //   }
+  //   actions = {
+  //     set_mcast_group_id;
+  //   }
+  // }
+
   apply {
-    if (!l2_broadcast_table.apply().hit) {
+    // if (!l2_broadcast_table.apply().hit) {
         l2_unicast_table.apply();
-    }
+    // }
   }
 } // end l2_fwd
 
@@ -200,43 +220,49 @@ control ingress(inout parsed_packet_t hdr,
                 inout standard_metadata_t standard_metadata) {
   apply {
     if (hdr.packet_out.isValid()) {
+      // Pretend packet came in through loopback port
+      if (hdr.packet_out.egress_physical_port == LOOPBACK_PORT) {
+        standard_metadata.ingress_port = LOOPBACK_PORT;
+      } else {
         standard_metadata.egress_spec = hdr.packet_out.egress_physical_port;
-        hdr.packet_out.setInvalid();
+      }
+      hdr.packet_out.setInvalid();
     }
-    if (standard_metadata.egress_spec == 0 ||
-            standard_metadata.egress_spec == LOOPBACK_PORT) {
-        punt.apply(hdr, local_metadata, standard_metadata);
-        // FIXME: l2_fwd should be applied only if packet is not to be routes
-        //     (i.e. table miss on l3 routing classifier)
-        l2_fwd.apply(hdr, local_metadata, standard_metadata);
-        // Packet was not bridged.
-        if (local_metadata.l2_hit != 1w1) {
-            l3_fwd.apply(hdr, local_metadata, standard_metadata);
-        }
+    if (standard_metadata.egress_spec == 0) {
+      // punt.apply(hdr, local_metadata, standard_metadata);
+    //     // FIXME: l2_fwd should be applied only if packet is not to be routes
+    //     //     (i.e. table miss on l3 routing classifier)
+    //     l2_fwd.apply(hdr, local_metadata, standard_metadata);
+    //     // Packet was not bridged.
+    //     if (local_metadata.l2_hit != 1w1) {
+    //         l3_fwd.apply(hdr, local_metadata, standard_metadata);
+    //     }
     }
+    l2_fwd.apply(hdr, local_metadata, standard_metadata);
+    l3_fwd.apply(hdr, local_metadata, standard_metadata);
+    punt.apply(hdr, local_metadata, standard_metadata);
   }
 } // end ingress
 
 control egress(inout parsed_packet_t hdr,
                inout local_metadata_t local_metadata,
                inout standard_metadata_t standard_metadata) {
-    apply {
-        if (standard_metadata.egress_port == CPU_PORT) {
-            hdr.packet_in.setValid();
-            hdr.packet_in.ingress_physical_port = standard_metadata.ingress_port;
-            hdr.packet_in.target_egress_port = local_metadata.egress_spec_at_punt_match;
-            // No need to process through the rest of the pipeline.
-            exit;
-        }
-
-        if (local_metadata.is_mcast == 1w1) {
-            // Ingress port pruning for replicated multicast packets.
-            if (standard_metadata.ingress_port == standard_metadata.egress_port) {
-                mark_to_drop(standard_metadata);
-                exit;
-            }
-        }
+  apply {
+    if (standard_metadata.egress_port == CPU_PORT) {
+        hdr.packet_in.setValid();
+        hdr.packet_in.ingress_physical_port = standard_metadata.ingress_port;
+        hdr.packet_in.target_egress_port = local_metadata.egress_spec_at_punt_match;
+        // No need to process through the rest of the pipeline.
+        exit;
     }
+
+    // Ingress port pruning for replicated multicast packets.
+    if (standard_metadata.mcast_grp > 0
+        && standard_metadata.ingress_port == standard_metadata.egress_port) {
+      mark_to_drop(standard_metadata);
+      exit;
+    }
+  }
 } // end egress
 
 V1Switch(
