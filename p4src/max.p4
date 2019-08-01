@@ -118,7 +118,7 @@ control l3_fwd(inout parsed_packet_t hdr,
   }
 
   @switchstack("pipeline_stage: L2")
-  table multicast_table {
+  table l2_broadcast_table {
     key = {
       hdr.ethernet.dst_addr : ternary;
     }
@@ -221,11 +221,13 @@ control ingress(inout parsed_packet_t hdr,
   apply {
     if (hdr.packet_out.isValid()) {
       // Pretend packet came in through loopback port
-      if (hdr.packet_out.egress_physical_port == LOOPBACK_PORT) {
-        standard_metadata.ingress_port = LOOPBACK_PORT;
-      } else {
-        standard_metadata.egress_spec = hdr.packet_out.egress_physical_port;
-      }
+      // if (hdr.packet_out.egress_physical_port == LOOPBACK_PORT) {
+      //   standard_metadata.ingress_port = LOOPBACK_PORT;
+      // } else {
+      //   standard_metadata.egress_spec = hdr.packet_out.egress_physical_port;
+      // }
+      standard_metadata.egress_spec = hdr.packet_out.egress_physical_port;
+
       hdr.packet_out.setInvalid();
     }
     if (standard_metadata.egress_spec == 0) {
@@ -257,11 +259,11 @@ control egress(inout parsed_packet_t hdr,
     }
 
     // Ingress port pruning for replicated multicast packets.
-    if (standard_metadata.mcast_grp > 0
-        && standard_metadata.ingress_port == standard_metadata.egress_port) {
-      mark_to_drop(standard_metadata);
-      exit;
-    }
+    // if (standard_metadata.mcast_grp > 0
+    //     && standard_metadata.ingress_port == standard_metadata.egress_port) {
+    //   mark_to_drop(standard_metadata);
+    //   exit;
+    // }
   }
 } // end egress
 
