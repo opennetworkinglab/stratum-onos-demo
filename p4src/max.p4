@@ -168,6 +168,7 @@ control l2_fwd(inout parsed_packet_t hdr,
     local_metadata.l2_hit = 1w1;
   }
 
+  @switchstack("pipeline_stage: L2")
   table l2_unicast_table {
     key = {
         hdr.ethernet.dst_addr : exact;
@@ -177,7 +178,7 @@ control l2_fwd(inout parsed_packet_t hdr,
     }
   }
 
-  @switchstack("pipeline_stage: INGRESS_ACL")
+  @switchstack("pipeline_stage: L2")
   table l2_broadcast_table {
     key = {
       hdr.ethernet.dst_addr : exact;
@@ -205,6 +206,7 @@ control ingress(inout parsed_packet_t hdr,
     if (standard_metadata.egress_spec == 0 ||
             standard_metadata.egress_spec == LOOPBACK_PORT) {
         punt.apply(hdr, local_metadata, standard_metadata);
+
         // FIXME: l2_fwd should be applied only if packet is not to be routes
         //     (i.e. table miss on l3 routing classifier)
         l2_fwd.apply(hdr, local_metadata, standard_metadata);
@@ -212,6 +214,7 @@ control ingress(inout parsed_packet_t hdr,
         if (local_metadata.l2_hit != 1w1) {
             l3_fwd.apply(hdr, local_metadata, standard_metadata);
         }
+
     }
   }
 } // end ingress
