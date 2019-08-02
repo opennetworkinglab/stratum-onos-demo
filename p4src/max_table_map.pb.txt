@@ -29,9 +29,23 @@ table_addenda_map {
   }
 }
 table_addenda_map {
-  key: "ingress.l3_routing_classifier_table"
+  key: "ingress.l2_fwd.l2_unicast_table"
+  value {
+    type: P4_TABLE_L2_UNICAST
+    addenda_names: "l2-vlan-fallback"
+  }
+}
+table_addenda_map {
+  key: "ingress.l3_fwd.l3_routing_classifier_table"
   value {
     type: P4_TABLE_L2_MY_STATION
+  }
+}
+table_addenda_map {
+  key: "ingress.l3_fwd.l2_broadcast_table"
+  value {
+    type: P4_TABLE_L2_MULTICAST
+    addenda_names: "l2-vlan-fallback"
   }
 }
 table_addenda_map {
@@ -74,6 +88,17 @@ table_addenda {
     type: P4_FIELD_TYPE_VRF
     value {
       u32: 2046  # kVrfOverride
+    }
+  }
+}
+
+# Defines an internal match on the default VLAN ID
+table_addenda {
+  name: "l2-vlan-fallback"
+  internal_match_fields {
+    type: P4_FIELD_TYPE_VLAN_VID
+    value {
+      u32: 1  # kDefaultVlan
     }
   }
 }
