@@ -205,7 +205,6 @@ control ingress(inout parsed_packet_t hdr,
     }
     if (standard_metadata.egress_spec == 0 ||
             standard_metadata.egress_spec == LOOPBACK_PORT) {
-        punt.apply(hdr, local_metadata, standard_metadata);
 
         // FIXME: l2_fwd should be applied only if packet is not to be routes
         //     (i.e. table miss on l3 routing classifier)
@@ -214,7 +213,7 @@ control ingress(inout parsed_packet_t hdr,
         if (local_metadata.l2_hit != 1w1) {
             l3_fwd.apply(hdr, local_metadata, standard_metadata);
         }
-
+        punt.apply(hdr, local_metadata, standard_metadata);
     }
   }
 } // end ingress
