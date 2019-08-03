@@ -159,13 +159,10 @@ control l2_fwd(inout parsed_packet_t hdr,
 
   action set_mcast_group_id(bit<16> group_id) {
     standard_metadata.mcast_grp = group_id;
-    local_metadata.is_mcast = 1w1;
-    local_metadata.l2_hit = 1w1;
   }
 
   action set_egress_port(PortNum port) {
     standard_metadata.egress_spec = port;
-    local_metadata.l2_hit = 1w1;
   }
 
   @switchstack("pipeline_stage: L2")
@@ -202,6 +199,7 @@ control ingress(inout parsed_packet_t hdr,
     if (hdr.packet_out.isValid()) {
         standard_metadata.egress_spec = hdr.packet_out.egress_physical_port;
         hdr.packet_out.setInvalid();
+        exit;
     }
     if (standard_metadata.egress_spec == 0 ||
             standard_metadata.egress_spec == LOOPBACK_PORT) {
@@ -209,12 +207,9 @@ control ingress(inout parsed_packet_t hdr,
         // FIXME: l2_fwd should be applied only if packet is not to be routes
         //     (i.e. table miss on l3 routing classifier)
         l2_fwd.apply(hdr, local_metadata, standard_metadata);
-        // Packet was not bridged.
-        if (local_metadata.l2_hit != 1w1) {
-            l3_fwd.apply(hdr, local_metadata, standard_metadata);
-        }
-        punt.apply(hdr, local_metadata, standard_metadata);
+        l3_fwd.apply(hdr, local_metadata, standard_metadata);
     }
+    punt.apply(hdr, local_metadata, standard_metadata);
   }
 } // end ingress
 
@@ -228,14 +223,6 @@ control egress(inout parsed_packet_t hdr,
             hdr.packet_in.target_egress_port = local_metadata.egress_spec_at_punt_match;
             // No need to process through the rest of the pipeline.
             exit;
-        }
-
-        if (local_metadata.is_mcast == 1w1) {
-            // Ingress port pruning for replicated multicast packets.
-            if (standard_metadata.ingress_port == standard_metadata.egress_port) {
-                mark_to_drop(standard_metadata);
-                exit;
-            }
         }
     }
 } // end egress
