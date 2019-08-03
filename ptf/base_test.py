@@ -21,6 +21,7 @@ import struct
 from StringIO import StringIO
 from collections import Counter
 from functools import wraps, partial
+import logging
 import re
 import sys
 import threading
@@ -584,7 +585,7 @@ class P4RuntimeTest(BaseTest):
         for port in ports:
             replica = mg_entry.replicas.add()
             replica.egress_port = port
-            replica.instance = 0
+            replica.instance = 1  # onos set replica to 1, this in enfored in stratum
         return req, self.write_request(req)
 
     def add_clone_session(self, clone_id, ports):
@@ -693,11 +694,24 @@ class P4RuntimeTest(BaseTest):
 
     def verify_packet_in(self, exp_pkt, exp_in_port, timeout=2):
         pkt_in_msg = self.get_packet_in(timeout=timeout)
-        in_port_ = stringify(exp_in_port, 4)
-        # First metadata
+        # Metadata ID 1 == ingress port
         rx_in_port_ = [x for x in pkt_in_msg.metadata if x.metadata_id == 1][0].value
-        if in_port_ != rx_in_port_:
-            rx_inport = struct.unpack("!i", rx_in_port_)[0]
+        rx_inport = -1
+        if len(rx_in_port_) == 1:
+            rx_inport = struct.unpack("!B", rx_in_port_)[0]
+        elif len(rx_in_port_) == 2:
+            rx_inport = struct.unpack("!H", rx_in_port_)[0]
+        elif len(rx_in_port_) == 4:
+            rx_inport = struct.unpack("!I", rx_in_port_)[0]
+        elif len(rx_in_port_) == 8:
+            rx_inport = struct.unpack("!L", rx_in_port_)[0]
+        else:
+            self.fail("Unexpected encoding of rx port packet_in metadata")
+
+        if len(rx_in_port_) != 2:
+            logging.warn("Rx port metadata should be 2 bytes long, is {}".format(len(rx_in_port_)))
+
+        if rx_inport != exp_in_port:
             self.fail("Wrong packet-in ingress port, expected {} but received was {}"
                       .format(exp_in_port, rx_inport))
         rx_pkt = Ether(pkt_in_msg.payload)
