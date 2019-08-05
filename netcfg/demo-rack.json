@@ -81,10 +81,10 @@
         }
       ]
     },
-    "device:leaf3/58": {
+    "device:leaf1/44": {
       "interfaces": [
         {
-          "name": "leaf3-58",
+          "name": "leaf1-44",
           "ips": ["10.0.3.100/24"]
         }
       ]
