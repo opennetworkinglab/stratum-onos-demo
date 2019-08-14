@@ -159,6 +159,7 @@ control l2_fwd(inout parsed_packet_t hdr,
 
   action set_mcast_group_id(bit<16> group_id) {
     standard_metadata.mcast_grp = group_id;
+    local_metadata.is_mcast = 1w1;
   }
 
   action set_egress_port(PortNum port) {
@@ -199,7 +200,9 @@ control ingress(inout parsed_packet_t hdr,
     if (hdr.packet_out.isValid()) {
         standard_metadata.egress_spec = hdr.packet_out.egress_physical_port;
         hdr.packet_out.setInvalid();
-        exit;
+	if(standard_metadata.egress_spec != 0 && standard_metadata.egress_spec != LOOPBACK_PORT) {
+        	exit;
+	}
     }
     if (standard_metadata.egress_spec == 0 ||
             standard_metadata.egress_spec == LOOPBACK_PORT) {
@@ -224,6 +227,13 @@ control egress(inout parsed_packet_t hdr,
             // No need to process through the rest of the pipeline.
             exit;
         }
+	if (local_metadata.is_mcast == 1w1) {
+	    // Ingress port pruning for replicated multicast packets.
+	    if (standard_metadata.ingress_port == standard_metadata.egress_port) {
+	        mark_to_drop(standard_metadata);
+	        exit;
+	    }
+	}
     }
 } // end egress
 
