@@ -16,7 +16,6 @@
 
 package org.stratumproject.fabricdemo.pipeconf;
 
-import org.onlab.packet.EthType;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.PortNumber;
 import org.onosproject.net.behaviour.NextGroup;
@@ -27,8 +26,6 @@ import org.onosproject.net.flow.DefaultFlowRule;
 import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.FlowRule;
 import org.onosproject.net.flow.FlowRuleService;
-import org.onosproject.net.flow.criteria.Criterion;
-import org.onosproject.net.flow.criteria.EthTypeCriterion;
 import org.onosproject.net.flow.instructions.Instructions;
 import org.onosproject.net.flowobjective.FilteringObjective;
 import org.onosproject.net.flowobjective.ForwardingObjective;
@@ -41,15 +38,15 @@ import org.onosproject.net.pi.model.PiActionParamId;
 import org.onosproject.net.pi.model.PiTableId;
 import org.onosproject.net.pi.runtime.PiAction;
 import org.onosproject.net.pi.runtime.PiActionParam;
-import org.stratumproject.fabricdemo.common.Utils;
 import org.slf4j.Logger;
+import org.stratumproject.fabricdemo.common.Utils;
 
 import java.util.Collections;
 import java.util.List;
 
 import static org.onosproject.net.flow.instructions.Instruction.Type.OUTPUT;
-import static org.stratumproject.fabricdemo.AppConstants.CPU_CLONE_SESSION_ID;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.stratumproject.fabricdemo.AppConstants.CPU_CLONE_SESSION_ID;
 
 /**
  * Pipeliner implementation that maps all forwarding objectives to the ACL
@@ -102,19 +99,11 @@ public class PipelinerImpl extends AbstractHandlerBehaviour implements Pipeliner
             obj.context().ifPresent(c -> c.onError(obj, ObjectiveError.UNSUPPORTED));
         }
 
-        // FIXME: Packet service generates flow objectives that map to punt-like
-        //  action rather than cloning. We should fix the PacketService rather
-        //  than using this workaround.
-        final boolean hasMatchOnEthTypeArp = obj.selector().criteria().stream()
-                .filter(c -> c.type().equals(Criterion.Type.ETH_TYPE))
-                .map(c -> (EthTypeCriterion) c)
-                .anyMatch(c -> c.ethType().toShort() == EthType.EtherType.ARP.ethType().toShort());
-
-        final String actionId = !obj.treatment().clearedDeferred() || hasMatchOnEthTypeArp
-                ? CLONE_TO_CPU : SEND_TO_CPU;
+        final String actionId = obj.treatment().clearedDeferred()
+                ? SEND_TO_CPU : CLONE_TO_CPU;
 
         // Create an equivalent FlowRule with same selector and clone_to_cpu action.
-        final PiAction cloneToCpuAction = PiAction.builder()
+        final PiAction cpuAction = PiAction.builder()
                 .withId(PiActionId.of(actionId))
                 .withParameter(new PiActionParam(
                         PiActionParamId.of(QUEUE_ID), DEFAULT_QUEUE))
@@ -127,7 +116,7 @@ public class PipelinerImpl extends AbstractHandlerBehaviour implements Pipeliner
                 .fromApp(obj.appId())
                 .withPriority(obj.priority())
                 .withTreatment(DefaultTrafficTreatment.builder()
-                                       .piTableAction(cloneToCpuAction).build());
+                                       .piTableAction(cpuAction).build());
 
         if (obj.permanent()) {
             ruleBuilder.makePermanent();
@@ -135,22 +124,29 @@ public class PipelinerImpl extends AbstractHandlerBehaviour implements Pipeliner
             ruleBuilder.makeTemporary(obj.timeout());
         }
 
-        final GroupDescription cloneGroup = Utils.buildCloneGroup(
-                obj.appId(),
-                deviceId,
-                CPU_CLONE_SESSION_ID,
-                // Ports where to clone the packet.
-                // Just controller in this case.
-                Collections.singleton(PortNumber.CONTROLLER));
+        final GroupDescription cloneGroup;
+        if (actionId.equals(CLONE_TO_CPU)) {
+            cloneGroup = Utils.buildCloneGroup(
+                    obj.appId(),
+                    deviceId,
+                    CPU_CLONE_SESSION_ID,
+                    // Ports where to clone the packet.
+                    // Just controller in this case.
+                    Collections.singleton(PortNumber.CONTROLLER));
+        } else {
+            cloneGroup = null;
+        }
 
         switch (obj.op()) {
             case ADD:
                 flowRuleService.applyFlowRules(ruleBuilder.build());
-                groupService.addGroup(cloneGroup);
+                if (cloneGroup != null) {
+                    groupService.addGroup(cloneGroup);
+                }
                 break;
             case REMOVE:
                 flowRuleService.removeFlowRules(ruleBuilder.build());
-                groupService.removeGroup(deviceId, cloneGroup.appCookie(), obj.appId());
+                // Do not remove the clone group, it could be used by other flows.
                 break;
             default:
                 log.warn("Unknown operation {}", obj.op());

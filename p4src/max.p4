@@ -11,6 +11,7 @@
 #define METER_GREEN 0
 #define LOOPBACK_PORT 13
 
+action nop() { }
 
 control punt(inout parsed_packet_t hdr,
              inout local_metadata_t local_metadata,
@@ -93,25 +94,8 @@ control punt(inout parsed_packet_t hdr,
 control l3_fwd(inout parsed_packet_t hdr,
                 inout local_metadata_t local_metadata,
                 inout standard_metadata_t standard_metadata) {
-  action nop() { }
 
   action drop() { mark_to_drop(standard_metadata); }
-
-  action set_l3_admit() {
-      local_metadata.l3_admit = 1;
-  }
-
-  @switchstack("pipeline_stage: L2")
-  table l3_routing_classifier_table {
-      key = {
-          hdr.ethernet.dst_addr : ternary;
-      }
-      actions = {
-          set_l3_admit;
-          nop;
-      }
-      default_action = nop();
-  }
 
   action set_nexthop(PortNum port,
                      EthernetAddress smac,
@@ -148,7 +132,6 @@ control l3_fwd(inout parsed_packet_t hdr,
   }
 
   apply {
-      l3_routing_classifier_table.apply();
       l3_fwd_table.apply();
   }
 } // end l3_fwd
@@ -157,62 +140,66 @@ control l2_fwd(inout parsed_packet_t hdr,
                inout local_metadata_t local_metadata,
                inout standard_metadata_t standard_metadata) {
 
-  action set_mcast_group_id(bit<16> group_id) {
-    standard_metadata.mcast_grp = group_id;
-    local_metadata.is_mcast = 1w1;
-  }
+    action set_mcast_group_id(bit<16> group_id) {
+      standard_metadata.mcast_grp = group_id;
+      local_metadata.is_mcast = 1w1;
+    }
 
-  action set_egress_port(PortNum port) {
-    standard_metadata.egress_spec = port;
-  }
+    action set_egress_port(PortNum port) {
+      standard_metadata.egress_spec = port;
+    }
 
-  @switchstack("pipeline_stage: L2")
-  table l2_unicast_table {
-    key = {
-        hdr.ethernet.dst_addr : exact;
+    @switchstack("pipeline_stage: L2")
+    table l2_unicast_table {
+        key = {
+            hdr.ethernet.dst_addr : exact;
+        }
+        actions = {
+            set_egress_port;
+        }
     }
-    actions = {
-        set_egress_port;
-    }
-  }
 
-  @switchstack("pipeline_stage: L2")
-  table l2_broadcast_table {
-    key = {
-      hdr.ethernet.dst_addr : exact;
+    apply {
+      l2_unicast_table.apply();
     }
-    actions = {
-      set_mcast_group_id;
-    }
-  }
-
-  apply {
-    if (!l2_broadcast_table.apply().hit) {
-        l2_unicast_table.apply();
-    }
-  }
 }
 
 control ingress(inout parsed_packet_t hdr,
                 inout local_metadata_t local_metadata,
                 inout standard_metadata_t standard_metadata) {
+
+  action set_l3_admit() {
+      local_metadata.l3_admit = 1w1;
+  }
+
+  @switchstack("pipeline_stage: L2")
+  table my_station_table {
+      key = {
+          hdr.ethernet.dst_addr : ternary;
+      }
+      actions = {
+          set_l3_admit;
+          nop;
+      }
+      default_action = nop();
+  }
+
   apply {
     if (hdr.packet_out.isValid()) {
         standard_metadata.egress_spec = hdr.packet_out.egress_physical_port;
         hdr.packet_out.setInvalid();
-	if(standard_metadata.egress_spec != 0 && standard_metadata.egress_spec != LOOPBACK_PORT) {
-        	exit;
-	}
     }
     if (standard_metadata.egress_spec == 0 ||
             standard_metadata.egress_spec == LOOPBACK_PORT) {
-
-        // FIXME: l2_fwd should be applied only if packet is not to be routes
-        //     (i.e. table miss on l3 routing classifier)
-        l2_fwd.apply(hdr, local_metadata, standard_metadata);
-        l3_fwd.apply(hdr, local_metadata, standard_metadata);
+        // Not valid egress port or not a packet out.
+        my_station_table.apply();
+        if (local_metadata.l3_admit == 1w1) {
+            l3_fwd.apply(hdr, local_metadata, standard_metadata);
+        } else {
+            l2_fwd.apply(hdr, local_metadata, standard_metadata);
+        }
+        punt.apply(hdr, local_metadata, standard_metadata);
     }
-    punt.apply(hdr, local_metadata, standard_metadata);
   }
 } // end ingress
 
@@ -227,13 +214,13 @@ control egress(inout parsed_packet_t hdr,
             // No need to process through the rest of the pipeline.
             exit;
         }
-	if (local_metadata.is_mcast == 1w1) {
-	    // Ingress port pruning for replicated multicast packets.
-	    if (standard_metadata.ingress_port == standard_metadata.egress_port) {
-	        mark_to_drop(standard_metadata);
-	        exit;
-	    }
-	}
+        if (local_metadata.is_mcast == 1w1) {
+            // Ingress port pruning for replicated multicast packets.
+            if (standard_metadata.ingress_port == standard_metadata.egress_port) {
+                mark_to_drop(standard_metadata);
+                exit;
+            }
+        }
     }
 } // end egress
 

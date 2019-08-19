@@ -36,7 +36,7 @@ table_addenda_map {
   }
 }
 table_addenda_map {
-  key: "ingress.l3_fwd.l3_routing_classifier_table"
+  key: "ingress.my_station_table"
   value {
     type: P4_TABLE_L2_MY_STATION
   }

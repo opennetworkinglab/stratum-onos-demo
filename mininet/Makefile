@@ -31,6 +31,7 @@ mn-log:
 netcfg:
 	${onos_curl} -X POST -H 'Content-Type:application/json' \
 		${onos_url}/v1/network/configuration -d@./topo/netcfg.json
+	echo
 
 app-reload: app-build app-uninstall app-install
 
@@ -41,9 +42,11 @@ app-install:
 	${onos_curl} -X POST -HContent-Type:application/octet-stream \
 		'${onos_url}/v1/applications?activate=true' \
 		--data-binary @../app/target/fabric-demo-1.0-SNAPSHOT.oar
+	echo
 
 app-uninstall:
 	${onos_curl} -X DELETE ${onos_url}/v1/applications/${app_name}
+	echo
 
 reset: stop
 	-rm -rf ./tmp
