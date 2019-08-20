@@ -87,9 +87,13 @@ public class MainComponent {
         waitPreviousCleanup();
 
         compCfgService.preSetProperty("org.onosproject.net.flow.impl.FlowRuleManager",
-                                      "fallbackFlowPollFrequency", "4", false);
+                "fallbackFlowPollFrequency", "4", false);
         compCfgService.preSetProperty("org.onosproject.net.group.impl.GroupManager",
-                                      "fallbackGroupPollFrequency", "3", false);
+                "fallbackGroupPollFrequency", "3", false);
+        compCfgService.preSetProperty("org.onosproject.provider.lldp.impl.LldpLinkProvider",
+                "useBddp", "false", false);
+        compCfgService.preSetProperty("org.onosproject.provider.general.device.impl.GeneralDeviceProvider",
+                "statsPollInterval", "2", false);
 
         configRegistry.registerConfigFactory(srv6ConfigFactory);
         log.info("Started");

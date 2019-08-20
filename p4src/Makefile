@@ -23,6 +23,11 @@ cpu_port_montara := 192
 
 build: bmv2 tofino fpm
 
+docker-pull:
+	docker pull ${p4c_fpm_img}
+	docker pull ${bf_sde_img}
+	docker pull ${p4c_bmv2_img}
+
 bmv2: bmv2-pp
 	### Generate bmv2.json and p4info.txt
 	###

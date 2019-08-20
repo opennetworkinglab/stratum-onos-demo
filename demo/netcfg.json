@@ -4,7 +4,9 @@
       "basic": {
         "managementAddress": "grpc://10.128.13.111:28000?device_id=1",
         "driver": "stratum-tofino",
-        "pipeconf": "org.stratumproject.fabric-demo.montara"
+        "pipeconf": "org.stratumproject.fabric-demo.montara",
+        "manufacturer": "Inventec Corp.",
+        "hwVersion": "D5254 (BFN Tofino)"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:aa:00:00:00:01",
@@ -15,7 +17,9 @@
       "basic": {
         "managementAddress": "grpc://10.128.13.241:28000?device_id=1",
         "driver": "stratum-fpm",
-        "pipeconf": "org.stratumproject.fabric-demo.fpm"
+        "pipeconf": "org.stratumproject.fabric-demo.fpm",
+        "manufacturer": "Edge-Core Networks Corp.",
+        "hwVersion": "AS7712-32X (BCM Tomahawk)"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:aa:00:00:00:02",
@@ -26,7 +30,9 @@
       "basic": {
         "managementAddress": "grpc://10.128.100.92:28000?device_id=1",
         "driver": "stratum-fpm",
-        "pipeconf": "org.stratumproject.fabric-demo.fpm"
+        "pipeconf": "org.stratumproject.fabric-demo.fpm",
+        "manufacturer": "Edge-Core Networks Corp.",
+        "hwVersion": "WEDGE100BF-32X (BFN Tofino)"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:aa:00:00:00:03",
@@ -37,7 +43,9 @@
       "basic": {
         "managementAddress": "grpc://10.128.13.232:28000?device_id=1",
         "driver": "stratum-tofino",
-        "pipeconf": "org.stratumproject.fabric-demo.montara"
+        "pipeconf": "org.stratumproject.fabric-demo.montara",
+        "manufacturer": "Edge-Core Networks Corp.",
+        "hwVersion": "WEDGE100BF-32X (BFN Tofino)"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:aa:00:00:01:01",
@@ -48,7 +56,9 @@
       "basic": {
         "managementAddress": "grpc://10.128.13.110:28000?device_id=1",
         "driver": "stratum-tofino",
-        "pipeconf": "org.stratumproject.fabric-demo.mavericks"
+        "pipeconf": "org.stratumproject.fabric-demo.mavericks",
+        "manufacturer": "Delta Electronics, Inc.",
+        "hwVersion": "AG9064v1 (BFN Tofino)"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:aa:00:00:01:02",
