@@ -744,10 +744,10 @@ class CloneSessionTest(ConfiguredTest):
 #         testutils.verify_no_other_packets(self)
 
 
-class EcmpTest(ConfiguredTest):
+class EcmpSingleGroupMultiPortTest(ConfiguredTest):
     """
-    TODO
-    Create ECMP routes & nexthops and send packets over them.
+    Create one ECMP route with two nexthops, send packets over them and
+    make sure they are send over both links.
     """
     @autocleanup
     def runTest(self):
@@ -809,21 +809,93 @@ class EcmpTest(ConfiguredTest):
                 pktlen=60, eth_src=self.switch_port_b_mac, eth_dst=self.host_port_b_mac,
                 ip_src=ip_src, ip_dst=self.ip_host_b, ip_ttl=63)
 
-            # Direct Tx to loopback port
-            pkt_out = p4runtime_pb2.PacketOut()
-            pkt_out.payload = str(pkt)
-            egress_physical_port = pkt_out.metadata.add()
-            egress_physical_port.metadata_id = 1
-            egress_physical_port.value = self.switch_port_loopback
-            self.send_packet_out(pkt_out)
+            testutils.send_packet(self, self.port_b, pkt)
 
             hit_port = testutils.verify_any_packet_any_port(self, [exp_pkt_on_a, exp_pkt_on_b], [self.port_a, self.port_b])
             hits[hit_port] = True
 
-        if not hits[self.port_a]:
+        if not hits[0]:
             self.fail("Port A never hit")
-        if not hits[self.port_b]:
+        if not hits[1]:
             self.fail("Port B never hit")
+
+
+class EcmpMultiGroupSinglePortTest(ConfiguredTest):
+    """
+    Create two ECMP routes with one host each.
+    """
+    @autocleanup
+    def runTest(self):
+        # Admit L2 packets with router MACs
+        self.send_request_add_entry_to_action(
+            "ingress.my_station_table",
+            [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
+            "ingress.set_l3_admit",
+            [],
+            DEFAULT_PRIORITY
+        )
+        self.send_request_add_entry_to_action(
+            "ingress.my_station_table",
+            [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_b_mac, "\xff\xff\xff\xff\xff\xff")],
+            "ingress.set_l3_admit",
+            [],
+            DEFAULT_PRIORITY
+        )
+        # Create non-multipath nhops
+        self.send_request_add_member(
+            "ingress.l3_fwd.wcmp_action_profile",
+            1,  # nhop id
+            "ingress.l3_fwd.set_nexthop",
+            [("port", self.port_a_), ("smac", self.switch_port_a_mac), ("dmac", self.host_port_a_mac), ("dst_vlan", stringify(1, 2))]
+        )
+        self.send_request_add_member(
+            "ingress.l3_fwd.wcmp_action_profile",
+            2,  # nhop id
+            "ingress.l3_fwd.set_nexthop",
+            [("port", self.port_b_), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
+        )
+
+        # Create ECMP groups
+        self.send_request_add_group(
+            "ingress.l3_fwd.wcmp_action_profile",
+            1,   # group id
+            128, # max members
+            [1]  # nhop members
+        )
+        self.send_request_add_group(
+            "ingress.l3_fwd.wcmp_action_profile",
+            2,   # group id
+            128, # max members
+            [2]  # nhop members
+        )
+        # Create L3 forwarding rules to ECMP groups
+        self.send_request_add_entry_to_group(
+            "ingress.l3_fwd.l3_fwd_table",
+            [self.Exact("local_metadata.vrf_id", stringify(0, 2)), self.Lpm("hdr.ipv4_base.dst_addr", self.ip_host_a_str, 16)],
+            1  # group id
+        )
+        self.send_request_add_entry_to_group(
+            "ingress.l3_fwd.l3_fwd_table",
+            [self.Exact("local_metadata.vrf_id", stringify(0, 2)), self.Lpm("hdr.ipv4_base.dst_addr", self.ip_host_b_str, 16)],
+            2  # group id
+        )
+
+        # Test host A to B
+        pkt = testutils.simple_ip_packet(
+            pktlen=60, eth_src=self.host_port_a_mac, eth_dst=self.switch_port_a_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=64)
+        exp_pkt = testutils.simple_ip_packet(
+            pktlen=60, eth_src=self.switch_port_b_mac, eth_dst=self.host_port_b_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=63)
+        testutils.send_packet(self, self.port_a, pkt)
+        testutils.verify_packets(self, exp_pkt, [self.port_b])
+        testutils.verify_no_other_packets(self)
+        # Test host B to A
+        pkt = testutils.simple_ip_packet(
+            pktlen=60, eth_src=self.host_port_b_mac, eth_dst=self.switch_port_b_mac, ip_src=self.ip_host_b, ip_dst=self.ip_host_a, ip_ttl=64)
+        exp_pkt = testutils.simple_ip_packet(
+            pktlen=60, eth_src=self.switch_port_a_mac, eth_dst=self.host_port_a_mac, ip_src=self.ip_host_b, ip_dst=self.ip_host_a, ip_ttl=63)
+        testutils.send_packet(self, self.port_b, pkt)
+        testutils.verify_packets(self, exp_pkt, [self.port_a])
+        testutils.verify_no_other_packets(self)
 
 
 # @testutils.group("bmv2")
