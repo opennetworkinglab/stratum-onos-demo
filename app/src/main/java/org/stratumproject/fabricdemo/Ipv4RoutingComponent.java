@@ -187,7 +187,7 @@ public class Ipv4RoutingComponent {
         // Modify P4Runtime entity names to match content of P4Info file (look
         // for the fully qualified name of tables, match fields, and actions.
         // ---- START SOLUTION ----
-        final String tableId = "ingress.l3_fwd.l3_routing_classifier_table";
+        final String tableId = "ingress.my_station_table";
 
         final PiCriterion match = PiCriterion.builder()
                 .matchTernary(
@@ -198,7 +198,7 @@ public class Ipv4RoutingComponent {
 
         // Creates an action which do *NoAction* when hit.
         final PiTableAction action = PiAction.builder()
-                .withId(PiActionId.of("ingress.l3_fwd.set_l3_admit"))
+                .withId(PiActionId.of("ingress.set_l3_admit"))
                 .build();
         // ---- END SOLUTION ----
 

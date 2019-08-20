@@ -213,16 +213,16 @@ class PktIoOutToIngressPipelineL3ForwardingTest(ConfiguredTest):
     def runTestTempDISABLED(self):
         # Admit L2 packets with router MACs
         self.send_request_add_entry_to_action(
-            "ingress.l3_fwd.l3_routing_classifier_table",
+            "ingress.my_station_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
-            "ingress.l3_fwd.set_l3_admit",
+            "ingress.set_l3_admit",
             [],
             DEFAULT_PRIORITY
         )
         self.send_request_add_entry_to_action(
-            "ingress.l3_fwd.l3_routing_classifier_table",
+            "ingress.my_station_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_b_mac, "\xff\xff\xff\xff\xff\xff")],
-            "ingress.l3_fwd.set_l3_admit",
+            "ingress.set_l3_admit",
             [],
             DEFAULT_PRIORITY
         )
@@ -304,9 +304,9 @@ class PacketIoOutDirectLoopbackL3ForwardingTest(ConfiguredTest):
     @autocleanup
     def runTest(self):
         self.send_request_add_entry_to_action(
-            "ingress.l3_fwd.l3_routing_classifier_table",
+            "ingress.my_station_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
-            "ingress.l3_fwd.set_l3_admit",
+            "ingress.set_l3_admit",
             [],
             DEFAULT_PRIORITY
         )
@@ -345,9 +345,9 @@ class PacketIoOutDirectLoopbackCloneToCpuTest(ConfiguredTest):
     @autocleanup
     def runTest(self):
         self.send_request_add_entry_to_action(
-            "ingress.l3_fwd.l3_routing_classifier_table",
+            "ingress.my_station_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
-            "ingress.l3_fwd.set_l3_admit",
+            "ingress.set_l3_admit",
             [],
             DEFAULT_PRIORITY
         )
@@ -450,9 +450,9 @@ class RedirectDataplaneToCpuNextHopTest(ConfiguredTest):
     @autocleanup
     def runTest(self):
         self.send_request_add_entry_to_action(
-            "ingress.l3_fwd.l3_routing_classifier_table",
+            "ingress.my_station_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
-            "ingress.l3_fwd.set_l3_admit",
+            "ingress.set_l3_admit",
             [],
             DEFAULT_PRIORITY
         )
@@ -496,9 +496,9 @@ class RedirectDataplaneToDataplaneTest(ConfiguredTest):
     @autocleanup
     def runTest(self):
         self.send_request_add_entry_to_action(
-            "ingress.l3_fwd.l3_routing_classifier_table",
+            "ingress.my_station_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
-            "ingress.l3_fwd.set_l3_admit",
+            "ingress.set_l3_admit",
             [],
             DEFAULT_PRIORITY
         )
@@ -542,9 +542,9 @@ class RedirectDataplaneToCpuACLTest(ConfiguredTest):
     @autocleanup
     def runTest(self):
         self.send_request_add_entry_to_action(
-            "ingress.l3_fwd.l3_routing_classifier_table",
+            "ingress.my_station_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
-            "ingress.l3_fwd.set_l3_admit",
+            "ingress.set_l3_admit",
             [],
             DEFAULT_PRIORITY
         )
@@ -589,16 +589,16 @@ class L3ForwardTest(ConfiguredTest):
     def runTest(self):
         # Admit L2 packets with router MACs
         self.send_request_add_entry_to_action(
-            "ingress.l3_fwd.l3_routing_classifier_table",
+            "ingress.my_station_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
-            "ingress.l3_fwd.set_l3_admit",
+            "ingress.set_l3_admit",
             [],
             DEFAULT_PRIORITY
         )
         self.send_request_add_entry_to_action(
-            "ingress.l3_fwd.l3_routing_classifier_table",
+            "ingress.my_station_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_b_mac, "\xff\xff\xff\xff\xff\xff")],
-            "ingress.l3_fwd.set_l3_admit",
+            "ingress.set_l3_admit",
             [],
             DEFAULT_PRIORITY
         )
@@ -700,69 +700,69 @@ class CloneSessionTest(ConfiguredTest):
         self.add_clone_session(CPU_MIRROR_SESSION_ID, [CPU_PORT])
 
 
-class L2MulticastTest(ConfiguredTest):
+# class L2MulticastTest(ConfiguredTest):
+#     """
+#     TODO
+#     """
+#     @autocleanup
+#     def runTest(self):
+#         mcast_group_id = 100
+#         # Use different MAC here to prevent collisions with NIC MACs
+#         mac_src = mac_to_binary("00:00:00:55:55:55")
+#
+#         self.add_mcast_group(mcast_group_id, [34, 35])
+#
+#         self.send_request_add_entry_to_action(
+#             "ingress.mcast.mcast_table",
+#             # [self.Exact("hdr.ethernet.ether_type", stringify(ARP_ETHERTYPE, 2))],
+#             [self.Exact("hdr.ethernet.ether_type", stringify(ARP_ETHERTYPE, 2)),
+#              self.Ternary("hdr.ethernet.src_addr", mac_src, "\xff\xff\xff\xff\xff\xff")],
+#             "set_mcast_group_id",
+#             [("group_id", stringify(mcast_group_id, 2))]
+#         )
+#
+#         pkt = testutils.simple_eth_packet(
+#             pktlen=60, eth_type=ARP_ETHERTYPE,
+#             eth_src=mac_src, eth_dst=self.switch_port_b_mac)
+#
+#         # Direct Tx to loopback port
+#         pkt_out = p4runtime_pb2.PacketOut()
+#         pkt_out.payload = str(pkt)
+#         egress_physical_port = pkt_out.metadata.add()
+#         egress_physical_port.metadata_id = 1
+#         egress_physical_port.value = self.switch_port_loopback
+#         self.send_packet_out(pkt_out)
+#         testutils.verify_packets(self, pkt, [self.port_a, self.port_b])
+#
+#         # Check ingress port pruning
+#         testutils.send_packet(self, self.port_a, pkt)
+#         testutils.verify_packets(self, pkt, [self.port_b])
+#         testutils.verify_no_other_packets(self)
+#
+#         testutils.send_packet(self, self.port_b, pkt)
+#         testutils.verify_packets(self, pkt, [self.port_a])
+#         testutils.verify_no_other_packets(self)
+
+
+class EcmpSingleGroupMultiPortTest(ConfiguredTest):
     """
-    TODO
-    """
-    @autocleanup
-    def runTest(self):
-        mcast_group_id = 100
-        # Use different MAC here to prevent collisions with NIC MACs
-        mac_src = mac_to_binary("00:00:00:55:55:55")
-
-        self.add_mcast_group(mcast_group_id, [34, 35])
-
-        self.send_request_add_entry_to_action(
-            "ingress.mcast.mcast_table",
-            # [self.Exact("hdr.ethernet.ether_type", stringify(ARP_ETHERTYPE, 2))],
-            [self.Exact("hdr.ethernet.ether_type", stringify(ARP_ETHERTYPE, 2)),
-             self.Ternary("hdr.ethernet.src_addr", mac_src, "\xff\xff\xff\xff\xff\xff")],
-            "set_mcast_group_id",
-            [("group_id", stringify(mcast_group_id, 2))]
-        )
-
-        pkt = testutils.simple_eth_packet(
-            pktlen=60, eth_type=ARP_ETHERTYPE,
-            eth_src=mac_src, eth_dst=self.switch_port_b_mac)
-
-        # Direct Tx to loopback port
-        pkt_out = p4runtime_pb2.PacketOut()
-        pkt_out.payload = str(pkt)
-        egress_physical_port = pkt_out.metadata.add()
-        egress_physical_port.metadata_id = 1
-        egress_physical_port.value = self.switch_port_loopback
-        self.send_packet_out(pkt_out)
-        testutils.verify_packets(self, pkt, [self.port_a, self.port_b])
-
-        # Check ingress port pruning
-        testutils.send_packet(self, self.port_a, pkt)
-        testutils.verify_packets(self, pkt, [self.port_b])
-        testutils.verify_no_other_packets(self)
-
-        testutils.send_packet(self, self.port_b, pkt)
-        testutils.verify_packets(self, pkt, [self.port_a])
-        testutils.verify_no_other_packets(self)
-
-
-class EcmpTest(ConfiguredTest):
-    """
-    TODO
-    Create ECMP routes & nexthops and send packets over them.
+    Create one ECMP route with two nexthops, send packets over them and
+    make sure they are send over both links.
     """
     @autocleanup
     def runTest(self):
         # Admit L2 packets with router MACs
         self.send_request_add_entry_to_action(
-            "ingress.l3_fwd.l3_routing_classifier_table",
+            "ingress.my_station_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
-            "ingress.l3_fwd.set_l3_admit",
+            "ingress.set_l3_admit",
             [],
             DEFAULT_PRIORITY
         )
         self.send_request_add_entry_to_action(
-            "ingress.l3_fwd.l3_routing_classifier_table",
+            "ingress.my_station_table",
             [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_b_mac, "\xff\xff\xff\xff\xff\xff")],
-            "ingress.l3_fwd.set_l3_admit",
+            "ingress.set_l3_admit",
             [],
             DEFAULT_PRIORITY
         )
@@ -809,81 +809,152 @@ class EcmpTest(ConfiguredTest):
                 pktlen=60, eth_src=self.switch_port_b_mac, eth_dst=self.host_port_b_mac,
                 ip_src=ip_src, ip_dst=self.ip_host_b, ip_ttl=63)
 
-            # Direct Tx to loopback port
-            pkt_out = p4runtime_pb2.PacketOut()
-            pkt_out.payload = str(pkt)
-            egress_physical_port = pkt_out.metadata.add()
-            egress_physical_port.metadata_id = 1
-            egress_physical_port.value = self.switch_port_loopback
-            self.send_packet_out(pkt_out)
+            testutils.send_packet(self, self.port_b, pkt)
 
             hit_port = testutils.verify_any_packet_any_port(self, [exp_pkt_on_a, exp_pkt_on_b], [self.port_a, self.port_b])
             hits[hit_port] = True
 
-        if not hits[self.port_a]:
+        if not hits[0]:
             self.fail("Port A never hit")
-        if not hits[self.port_b]:
+        if not hits[1]:
             self.fail("Port B never hit")
 
 
-@testutils.group("bmv2")
-@testutils.group("bridging")
-class ArpWithCloneTest(ConfiguredTest):
-    """Tests ability to broadcast ARP requests as well as cloning to CPU
-    (controller) for host discovery.
+class EcmpMultiGroupSinglePortTest(ConfiguredTest):
     """
-
-    def runTest(self):
-        arp_pkt = testutils.simple_arp_packet(eth_src=self.host_port_a_mac)
-        self.testPacket(arp_pkt)
-
+    Create two ECMP routes with one host each.
+    """
     @autocleanup
-    def testPacket(self, pkt):
-        mcast_group_id = 10
-        mcast_ports = [self.port_a, self.port_b, self.port_c]
-
-        # Add multicast group.
-        self.add_multicast_group(
-            group_id=mcast_group_id,
-            ports=mcast_ports)
-
+    def runTest(self):
+        # Admit L2 packets with router MACs
         self.send_request_add_entry_to_action(
-            "ingress.l2_fwd.l2_broadcast_table",
-            [self.Exact("hdr.ethernet.dst_addr", "\xFF\xFF\xFF\xFF\xFF\xFF")],
-            "set_mcast_group_id",
-            [("group_id", stringify(mcast_group_id, 2))]
-        )
-
-        # Insert CPU clone session.
-        self.add_clone_session(
-            clone_id=CPU_MIRROR_SESSION_ID,
-            ports=[CPU_PORT])
-
-        self.send_request_add_entry_to_action(
-            "ingress.punt.punt_table",
-            [self.Ternary("hdr.ethernet.ether_type", "\x08\x06", "\xFF\xFF")],
-            "set_queue_and_clone_to_cpu",
-            [("queue_id", stringify(4, 1))],
+            "ingress.my_station_table",
+            [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_a_mac, "\xff\xff\xff\xff\xff\xff")],
+            "ingress.set_l3_admit",
+            [],
             DEFAULT_PRIORITY
         )
+        self.send_request_add_entry_to_action(
+            "ingress.my_station_table",
+            [self.Ternary("hdr.ethernet.dst_addr", self.switch_port_b_mac, "\xff\xff\xff\xff\xff\xff")],
+            "ingress.set_l3_admit",
+            [],
+            DEFAULT_PRIORITY
+        )
+        # Create non-multipath nhops
+        self.send_request_add_member(
+            "ingress.l3_fwd.wcmp_action_profile",
+            1,  # nhop id
+            "ingress.l3_fwd.set_nexthop",
+            [("port", self.port_a_), ("smac", self.switch_port_a_mac), ("dmac", self.host_port_a_mac), ("dst_vlan", stringify(1, 2))]
+        )
+        self.send_request_add_member(
+            "ingress.l3_fwd.wcmp_action_profile",
+            2,  # nhop id
+            "ingress.l3_fwd.set_nexthop",
+            [("port", self.port_b_), ("smac", self.switch_port_b_mac), ("dmac", self.host_port_b_mac), ("dst_vlan", stringify(1, 2))]
+        )
 
-        for inport in mcast_ports:
+        # Create ECMP groups
+        self.send_request_add_group(
+            "ingress.l3_fwd.wcmp_action_profile",
+            1,   # group id
+            128, # max members
+            [1]  # nhop members
+        )
+        self.send_request_add_group(
+            "ingress.l3_fwd.wcmp_action_profile",
+            2,   # group id
+            128, # max members
+            [2]  # nhop members
+        )
+        # Create L3 forwarding rules to ECMP groups
+        self.send_request_add_entry_to_group(
+            "ingress.l3_fwd.l3_fwd_table",
+            [self.Exact("local_metadata.vrf_id", stringify(0, 2)), self.Lpm("hdr.ipv4_base.dst_addr", self.ip_host_a_str, 16)],
+            1  # group id
+        )
+        self.send_request_add_entry_to_group(
+            "ingress.l3_fwd.l3_fwd_table",
+            [self.Exact("local_metadata.vrf_id", stringify(0, 2)), self.Lpm("hdr.ipv4_base.dst_addr", self.ip_host_b_str, 16)],
+            2  # group id
+        )
 
-            # Send packet...
-            testutils.send_packet(self, inport, str(pkt))
-
-            # Pkt should be received on CPU via PacketIn...
-            # Expected P4Runtime PacketIn message.
-            self.verify_packet_in(pkt, inport)
-
-            # ...and on all ports except the ingress one.
-            verify_ports = set(mcast_ports)
-            verify_ports.discard(inport)
-            for port in verify_ports:
-                testutils.verify_packet(self, pkt, port)
-
+        # Test host A to B
+        pkt = testutils.simple_ip_packet(
+            pktlen=60, eth_src=self.host_port_a_mac, eth_dst=self.switch_port_a_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=64)
+        exp_pkt = testutils.simple_ip_packet(
+            pktlen=60, eth_src=self.switch_port_b_mac, eth_dst=self.host_port_b_mac, ip_src=self.ip_host_a, ip_dst=self.ip_host_b, ip_ttl=63)
+        testutils.send_packet(self, self.port_a, pkt)
+        testutils.verify_packets(self, exp_pkt, [self.port_b])
+        testutils.verify_no_other_packets(self)
+        # Test host B to A
+        pkt = testutils.simple_ip_packet(
+            pktlen=60, eth_src=self.host_port_b_mac, eth_dst=self.switch_port_b_mac, ip_src=self.ip_host_b, ip_dst=self.ip_host_a, ip_ttl=64)
+        exp_pkt = testutils.simple_ip_packet(
+            pktlen=60, eth_src=self.switch_port_a_mac, eth_dst=self.host_port_a_mac, ip_src=self.ip_host_b, ip_dst=self.ip_host_a, ip_ttl=63)
+        testutils.send_packet(self, self.port_b, pkt)
+        testutils.verify_packets(self, exp_pkt, [self.port_a])
         testutils.verify_no_other_packets(self)
 
+
+# @testutils.group("bmv2")
+# @testutils.group("bridging")
+# class ArpWithCloneTest(ConfiguredTest):
+#     """Tests ability to broadcast ARP requests as well as cloning to CPU
+#     (controller) for host discovery.
+#     """
+#
+#     def runTest(self):
+#         arp_pkt = testutils.simple_arp_packet(eth_src=self.host_port_a_mac)
+#         self.testPacket(arp_pkt)
+#
+#     @autocleanup
+#     def testPacket(self, pkt):
+#         mcast_group_id = 10
+#         mcast_ports = [self.port_a, self.port_b, self.port_c]
+#
+#         # Add multicast group.
+#         self.add_multicast_group(
+#             group_id=mcast_group_id,
+#             ports=mcast_ports)
+#
+#         self.send_request_add_entry_to_action(
+#             "ingress.l2_fwd.l2_broadcast_table",
+#             [self.Exact("hdr.ethernet.dst_addr", "\xFF\xFF\xFF\xFF\xFF\xFF")],
+#             "set_mcast_group_id",
+#             [("group_id", stringify(mcast_group_id, 2))]
+#         )
+#
+#         # Insert CPU clone session.
+#         self.add_clone_session(
+#             clone_id=CPU_MIRROR_SESSION_ID,
+#             ports=[CPU_PORT])
+#
+#         self.send_request_add_entry_to_action(
+#             "ingress.punt.punt_table",
+#             [self.Ternary("hdr.ethernet.ether_type", "\x08\x06", "\xFF\xFF")],
+#             "set_queue_and_clone_to_cpu",
+#             [("queue_id", stringify(4, 1))],
+#             DEFAULT_PRIORITY
+#         )
+#
+#         for inport in mcast_ports:
+#
+#             # Send packet...
+#             testutils.send_packet(self, inport, str(pkt))
+#
+#             # Pkt should be received on CPU via PacketIn...
+#             # Expected P4Runtime PacketIn message.
+#             self.verify_packet_in(pkt, inport)
+#
+#             # ...and on all ports except the ingress one.
+#             verify_ports = set(mcast_ports)
+#             verify_ports.discard(inport)
+#             for port in verify_ports:
+#                 testutils.verify_packet(self, pkt, port)
+#
+#         testutils.verify_no_other_packets(self)
 
 @testutils.group("bmv2")
 @testutils.group("bridging")
