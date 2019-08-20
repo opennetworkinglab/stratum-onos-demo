@@ -296,6 +296,32 @@ class PacketIoOutDirectLoopbackPortAclTest(ConfiguredTest):
 
 
 @testutils.group("bmv2")
+class LldpPacketInTest(ConfiguredTest):
+    """
+    Verify that LLDP packets are punted by the ACL table
+    """
+    @autocleanup
+    def runTest(self):
+        # Redirect IPv4 to CPU with CoS 4
+        self.send_request_add_entry_to_action(
+            "ingress.punt.punt_table",
+            [self.Ternary("hdr.ethernet.ether_type", "\x88\xcc", "\xff\xff")],
+            "set_queue_and_send_to_cpu",
+            [("queue_id", stringify(4, 1))],
+            DEFAULT_PRIORITY
+        )
+
+        # LLDP eth type
+        pkt = Ether(dst="00:00:00:00:00:01", src="00:00:00:00:00:02", type=0x88cc)
+        pkt = pkt / "AN_ARBITRARY_LLDP_PAYLOAD"
+
+        for p in [self.port_a, self.port_b]:
+            testutils.send_packet(self, p, pkt)
+            self.verify_packet_in(pkt, p)
+        testutils.verify_no_other_packets(self)
+
+
+@testutils.group("bmv2")
 class PacketIoOutDirectLoopbackL3ForwardingTest(ConfiguredTest):
     """
     Send a packet directly to loopback port and L3 forward it to
