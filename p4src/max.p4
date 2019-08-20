@@ -193,8 +193,11 @@ control ingress(inout parsed_packet_t hdr,
         } else {
             l2_fwd.apply(hdr, local_metadata, standard_metadata);
         }
-        punt.apply(hdr, local_metadata, standard_metadata);
+    } else {
+      // We make FPM happy by doing punt.apply() outside of an if block.
+      exit;
     }
+    punt.apply(hdr, local_metadata, standard_metadata);
   }
 } // end ingress
 
