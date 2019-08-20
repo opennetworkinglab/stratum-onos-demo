@@ -140,11 +140,6 @@ control l2_fwd(inout parsed_packet_t hdr,
                inout local_metadata_t local_metadata,
                inout standard_metadata_t standard_metadata) {
 
-    action set_mcast_group_id(bit<16> group_id) {
-      standard_metadata.mcast_grp = group_id;
-      local_metadata.is_mcast = 1w1;
-    }
-
     action set_egress_port(PortNum port) {
       standard_metadata.egress_spec = port;
     }
@@ -213,13 +208,6 @@ control egress(inout parsed_packet_t hdr,
             hdr.packet_in.target_egress_port = local_metadata.egress_spec_at_punt_match;
             // No need to process through the rest of the pipeline.
             exit;
-        }
-        if (local_metadata.is_mcast == 1w1) {
-            // Ingress port pruning for replicated multicast packets.
-            if (standard_metadata.ingress_port == standard_metadata.egress_port) {
-                mark_to_drop(standard_metadata);
-                exit;
-            }
         }
     }
 } // end egress
