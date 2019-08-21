@@ -362,9 +362,9 @@ public class Ipv4RoutingComponent {
         public boolean isRelevant(LinkEvent event) {
             switch (event.type()) {
                 case LINK_ADDED:
-                    break;
                 case LINK_UPDATED:
                 case LINK_REMOVED:
+                    break;
                 default:
                     return false;
             }
@@ -423,7 +423,7 @@ public class Ipv4RoutingComponent {
             mainComponent.getExecutorService().execute(() -> {
                 DeviceId deviceId = event.subject().id();
                 log.info("{} event! device id={}", event.type(), deviceId);
-                setUpMyStationTable(deviceId);
+                setUpDevice(deviceId);
             });
         }
     }
@@ -598,8 +598,16 @@ public class Ipv4RoutingComponent {
         }
 
         if (macToPorts.values().isEmpty()) {
+            log.info("There are NO spines attached to leaf {} :(", leafId);
             // No routes to install.
             return;
+        }
+
+        log.info("Found {} spines attached to leaf {}...",
+                macToPorts.keySet().size(), leafId);
+        for (MacAddress mac : macToPorts.keySet()) {
+            log.info("{} -> {} via {} ports ({})",
+                    leafId, mac, macToPorts.get(mac).size(), macToPorts.get(mac));
         }
 
         // Create an ECMP group to distribute traffic across all spines.
@@ -725,12 +733,14 @@ public class Ipv4RoutingComponent {
         stream(deviceService.getAvailableDevices())
                 .map(Device::id)
                 .filter(mastershipService::isLocalMaster)
-                .forEach(deviceId -> {
-                    log.info("*** IPV4 ROUTING - Starting initial set up for {}...", deviceId);
-                    setUpMyStationTable(deviceId);
-                    setUpFabricRoutes(deviceId);
-                    hostService.getConnectedHosts(deviceId)
-                            .forEach(host -> setUpHostRules(deviceId, host));
-                });
+                .forEach(this::setUpDevice);
+    }
+
+    private void setUpDevice(DeviceId deviceId) {
+        log.info("*** IPV4 ROUTING - Starting initial set up for {}...", deviceId);
+        setUpMyStationTable(deviceId);
+        setUpFabricRoutes(deviceId);
+        hostService.getConnectedHosts(deviceId)
+                .forEach(host -> setUpHostRules(deviceId, host));
     }
 }
