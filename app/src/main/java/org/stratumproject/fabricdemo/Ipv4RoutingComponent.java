@@ -39,8 +39,7 @@ import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.flow.FlowRule;
 import org.onosproject.net.flow.FlowRuleService;
 import org.onosproject.net.flow.criteria.PiCriterion;
-import org.onosproject.net.group.GroupDescription;
-import org.onosproject.net.group.GroupService;
+import org.onosproject.net.group.*;
 import org.onosproject.net.host.HostEvent;
 import org.onosproject.net.host.HostListener;
 import org.onosproject.net.host.HostService;
@@ -705,6 +704,37 @@ public class Ipv4RoutingComponent {
     }
 
     /**
+     * Inserts a new group, or if the group already exists, performs the required modifications.
+     *
+     * @param group new group
+     */
+    private synchronized void insertOrModifyGroup(GroupDescription group) {
+        Group existing = groupService.getGroup(group.deviceId(), group.appCookie());
+        if (existing == null) {
+            groupService.addGroup(group);
+            return;
+        }
+        List<GroupBucket> existingBuckets = existing.buckets().buckets();
+        List<GroupBucket> newBuckets = group.buckets().buckets();
+
+        List<GroupBucket> toAdd = Lists.newArrayList(newBuckets);
+        toAdd.removeAll(existingBuckets);
+        if (!toAdd.isEmpty()) {
+            GroupBuckets buckets = new GroupBuckets(toAdd);
+            groupService.addBucketsToGroup(group.deviceId(), group.appCookie(), buckets,
+                    group.appCookie(), group.appId());
+        }
+
+        List<GroupBucket> toRemove = Lists.newArrayList(existingBuckets);
+        toRemove.removeAll(newBuckets);
+        if (!toRemove.isEmpty()) {
+            GroupBuckets buckets = new GroupBuckets(toRemove);
+            groupService.removeBucketsFromGroup(group.deviceId(), group.appCookie(), buckets,
+                    group.appCookie(), group.appId());
+        }
+    }
+
+    /**
      * Inserts the given groups and flow rules in order, groups first, then flow
      * rules. In P4Runtime, when operating on an indirect table (i.e. with
      * action selectors), groups must be inserted before table entries.
@@ -714,7 +744,7 @@ public class Ipv4RoutingComponent {
      */
     private void insertInOrder(GroupDescription group, Collection<FlowRule> flowRules) {
         try {
-            groupService.addGroup(group);
+            insertOrModifyGroup(group);
             // Wait for groups to be inserted.
             Thread.sleep(GROUP_INSERT_DELAY_MILLIS);
             flowRules.forEach(flowRuleService::applyFlowRules);
