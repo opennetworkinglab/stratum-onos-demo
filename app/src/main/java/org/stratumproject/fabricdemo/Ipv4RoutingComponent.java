@@ -714,24 +714,9 @@ public class Ipv4RoutingComponent {
             groupService.addGroup(group);
             return;
         }
-        List<GroupBucket> existingBuckets = existing.buckets().buckets();
-        List<GroupBucket> newBuckets = group.buckets().buckets();
 
-        List<GroupBucket> toAdd = Lists.newArrayList(newBuckets);
-        toAdd.removeAll(existingBuckets);
-        if (!toAdd.isEmpty()) {
-            GroupBuckets buckets = new GroupBuckets(toAdd);
-            groupService.addBucketsToGroup(group.deviceId(), group.appCookie(), buckets,
-                    group.appCookie(), group.appId());
-        }
-
-        List<GroupBucket> toRemove = Lists.newArrayList(existingBuckets);
-        toRemove.removeAll(newBuckets);
-        if (!toRemove.isEmpty()) {
-            GroupBuckets buckets = new GroupBuckets(toRemove);
-            groupService.removeBucketsFromGroup(group.deviceId(), group.appCookie(), buckets,
-                    group.appCookie(), group.appId());
-        }
+        groupService.setBucketsForGroup(group.deviceId(), group.appCookie(),
+                                        group.buckets(), group.appCookie(), group.appId());
     }
 
     /**
