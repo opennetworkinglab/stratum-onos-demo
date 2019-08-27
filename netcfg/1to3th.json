@@ -1,0 +1,104 @@
+{
+  "devices": {
+    "device:leaf1": {
+      "basic": {
+        "managementAddress": "grpc://10.128.13.112:28000?device_id=1",
+        "driver": "stratum-fpm",
+        "pipeconf": "org.stratumproject.fabric-demo.fpm"
+      },
+      "fabricDeviceConfig": {
+        "myStationMac": "00:aa:00:00:00:01",
+        "isSpine": false
+      }
+    },
+    "device:leaf2": {
+      "basic": {
+        "managementAddress": "grpc://10.128.13.241:28000?device_id=1",
+        "driver": "stratum-fpm",
+        "pipeconf": "org.stratumproject.fabric-demo.fpm"
+      },
+      "fabricDeviceConfig": {
+        "myStationMac": "00:aa:00:00:00:02",
+        "isSpine": false
+      }
+    },
+    "device:spine1": {
+      "basic": {
+        "managementAddress": "grpc://10.128.13.115:28000?device_id=1",
+        "driver": "stratum-fpm",
+        "pipeconf": "org.stratumproject.fabric-demo.fpm"
+      },
+      "fabricDeviceConfig": {
+        "myStationMac": "00:bb:00:00:00:01",
+        "isSpine": true
+      }
+    },
+    "device:spine2": {
+      "basic": {
+        "managementAddress": "grpc://10.128.13.110:28000?device_id=1",
+        "driver": "stratum-tofino",
+        "pipeconf": "org.stratumproject.fabric-demo.mavericks"
+      },
+      "fabricDeviceConfig": {
+        "myStationMac": "00:bb:00:00:00:02",
+        "isSpine": true
+      }
+    }
+  },
+  "ports": {
+    "device:leaf1/144": {
+      "interfaces": [
+        {
+          "name": "leaf1-144",
+          "ips": ["10.0.1.100/24"]
+        }
+      ]
+    },
+    "device:leaf1/152": {
+      "interfaces": [
+        {
+          "name": "leaf1-152",
+          "ips": ["10.0.1.100/24"]
+        }
+      ]
+    },
+    "device:leaf2/58": {
+      "interfaces": [
+        {
+          "name": "leaf2-58",
+          "ips": ["10.0.2.100/24"]
+        }
+      ]
+    },
+    "device:leaf2/62": {
+      "interfaces": [
+        {
+          "name": "leaf2-62",
+          "ips": ["10.0.2.100/24"]
+        }
+      ]
+    }
+  },
+  "hosts": {
+    "3c:fd:fe:9d:f1:48/None": {
+      "basic": {
+        "name": "h1"
+      }
+    },
+    "3c:fd:fe:9d:f1:49/None": {
+      "basic": {
+        "name": "h2"
+      }
+    },
+    "3c:fd:fe:9d:f0:38/None": {
+      "basic": {
+        "name": "h3"
+      }
+    },
+    "3c:fd:fe:9d:f0:39/None": {
+      "basic": {
+        "name": "h4"
+      }
+    }
+  }
+}
