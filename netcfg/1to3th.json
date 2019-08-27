@@ -4,7 +4,12 @@
       "basic": {
         "managementAddress": "grpc://10.128.13.112:28000?device_id=1",
         "driver": "stratum-fpm",
-        "pipeconf": "org.stratumproject.fabric-demo.fpm"
+        "pipeconf": "org.stratumproject.fabric-demo.fpm",
+        "manufacturer": "Quanta Cloud Technology",
+        "hwVersion": "T7032-IX1 (BCM Tomahawk)",
+        "swVersion": "stratum_bcm",
+        "latitude": "35",
+        "longitude": "-103"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:aa:00:00:00:01",
@@ -15,7 +20,12 @@
       "basic": {
         "managementAddress": "grpc://10.128.13.241:28000?device_id=1",
         "driver": "stratum-fpm",
-        "pipeconf": "org.stratumproject.fabric-demo.fpm"
+        "pipeconf": "org.stratumproject.fabric-demo.fpm",
+        "manufacturer": "Edge-Core Networks Corp.",
+        "hwVersion": "AS7712-32X (BCM Tomahawk)",
+        "swVersion": "stratum_bcm",
+        "latitude": "35",
+        "longitude": "-78"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:aa:00:00:00:02",
@@ -26,7 +36,12 @@
       "basic": {
         "managementAddress": "grpc://10.128.13.115:28000?device_id=1",
         "driver": "stratum-fpm",
-        "pipeconf": "org.stratumproject.fabric-demo.fpm"
+        "pipeconf": "org.stratumproject.fabric-demo.fpm",
+        "manufacturer": "Inventec Corp.",
+        "hwVersion": "D7032Q28B (BCM Tomahawk)",
+        "swVersion": "stratum_bcm",
+        "latitude": "40",
+        "longitude": "-95"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:bb:00:00:00:01",
@@ -37,7 +52,12 @@
       "basic": {
         "managementAddress": "grpc://10.128.13.110:28000?device_id=1",
         "driver": "stratum-tofino",
-        "pipeconf": "org.stratumproject.fabric-demo.mavericks"
+        "pipeconf": "org.stratumproject.fabric-demo.mavericks",
+        "manufacturer": "Delta Electronics, Inc.",
+        "hwVersion": "AG9064v1 (BFN Tofino)",
+        "swVersion": "stratum_bf",
+        "latitude": "40",
+        "longitude": "-85"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:bb:00:00:00:02",
@@ -82,22 +102,30 @@
   "hosts": {
     "3c:fd:fe:9d:f1:48/None": {
       "basic": {
-        "name": "h1"
+        "name": "h1",
+        "latitude": "31",
+        "longitude": "-106"
       }
     },
     "3c:fd:fe:9d:f1:49/None": {
       "basic": {
-        "name": "h2"
+        "name": "h2",
+        "latitude": "31",
+        "longitude": "-100"
       }
     },
     "3c:fd:fe:9d:f0:38/None": {
       "basic": {
-        "name": "h3"
+        "name": "h3",
+        "latitude": "31",
+        "longitude": "-81"
       }
     },
     "3c:fd:fe:9d:f0:39/None": {
       "basic": {
-        "name": "h4"
+        "name": "h4",
+        "latitude": "31",
+        "longitude": "-75"
       }
     }
   }
