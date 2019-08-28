@@ -47,6 +47,12 @@ development) or in cluster mode.
 ONOS_APPS=gui,drivers,drivers.stratum,drivers.barefoot,generaldeviceprovider,netcfghostprovider,lldpprovider,proxyarp ok clean debug
 ```
 
+#### Set packet I/O log level to trace
+```
+log:set TRACE org.onosproject.provider.p4runtime.packet.impl
+log:set TRACE org.onosproject.drivers.p4runtime.P4RuntimePacketProgrammable
+```
+
 #### Load app and netcfg
 
 On a second terminal window:
