@@ -1,0 +1,29 @@
+disable 0-3 vlan
+range 0-3 proto udp
+range 0-3 size start 1500
+
+range 0 src mac start 00:00:00:00:00:01
+range 0 dst mac start 00:aa:00:00:00:01
+range 0 src ip start 10.0.1.1
+range 0 dst ip start 10.0.2.1
+
+range 1 src mac start 00:00:00:00:00:02
+range 1 dst mac start 00:aa:00:00:00:01
+range 1 src ip start 10.0.2.1
+range 1 dst ip start 10.0.3.1
+
+range 2 src mac start 00:00:00:00:00:03
+range 2 dst mac start 00:aa:00:00:00:03
+range 2 src ip start 10.0.3.1
+range 2 dst ip start 10.0.4.1
+
+range 3 src mac start 00:00:00:00:00:04
+range 3 dst mac start 00:aa:00:00:00:04
+range 3 src ip start 10.0.4.1
+range 3 dst ip start 10.0.1.1
+
+enable 0-3 range
+
+start 0-3 arp gratuitous
+
+start 0-3
