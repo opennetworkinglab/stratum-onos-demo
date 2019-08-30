@@ -64,6 +64,13 @@ cd ../demo
 onos-netcfg localhost netcfg.json
 ```
 
+#### Send gratuitous ARP reply from hosts
+
+To send gratuitous ARP to the switch, use follow command from hosts:
+```
+arp -c 1 -P -U [Host IP]
+```
+
 ### Demo with ONOS cluster
 
 Execute steps 2 in the demo server (bazel-cache).
