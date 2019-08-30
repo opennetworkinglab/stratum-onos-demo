@@ -44,7 +44,7 @@ development) or in cluster mode.
 #### Start ONOS in local mode
 
 ```
-ONOS_APPS=gui,drivers,drivers.stratum,drivers.barefoot,generaldeviceprovider,netcfghostprovider,lldpprovider,proxyarp ok clean debug
+ONOS_APPS=gui,drivers,drivers.stratum,drivers.barefoot,generaldeviceprovider,netcfghostprovider,lldpprovider,proxyarp,route-service ok clean debug
 ```
 
 #### Load app and netcfg
