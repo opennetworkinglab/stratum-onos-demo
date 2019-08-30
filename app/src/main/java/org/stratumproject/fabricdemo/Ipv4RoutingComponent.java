@@ -154,6 +154,7 @@ public class Ipv4RoutingComponent {
         hostService.removeListener(hostListener);
         linkService.removeListener(linkListener);
         deviceService.removeListener(deviceListener);
+        routeService.removeListener(routeListener);
 
         log.info("Stopped");
     }
@@ -488,6 +489,10 @@ public class Ipv4RoutingComponent {
     private void setUpRouteRuleToLeaf(DeviceId deviceId, ResolvedRoute route, RouteEvent.Type op) {
         HostId nextHopId = HostId.hostId(route.nextHopMac(), route.nextHopVlan());
         Host nextHop = hostService.getHost(nextHopId);
+        if (nextHop == null || nextHop.location() == null) {
+            log.warn("Cannot find next hop %s, ignore it", route.nextHop());
+            return;
+        }
         int groupId;
         if (nextHop.location().deviceId().equals(deviceId)) {
             // Next hop host connect to this device
@@ -515,6 +520,10 @@ public class Ipv4RoutingComponent {
     private void setUpRouteRuleToSpine(DeviceId deviceId, ResolvedRoute route, RouteEvent.Type op) {
         HostId nextHopId = HostId.hostId(route.nextHopMac(), route.nextHopVlan());
         Host nextHop = hostService.getHost(nextHopId);
+        if (nextHop == null || nextHop.location() == null) {
+            log.warn("Cannot find next hop %s, ignore it", route.nextHop());
+            return;
+        }
         // Find the device mac which connect to the next hop host.
         MacAddress leafMac = getMyStationMac(nextHop.location().deviceId());
         int groupId = macToGroupId(leafMac);
@@ -731,7 +740,7 @@ public class Ipv4RoutingComponent {
         routeService.getRouteTables().stream()
                 .map(routeService::getResolvedRoutes)
                 .flatMap(Collection::stream)
-                .forEach(resolvedRoute -> setUpRouteRuleToSpine(leafId, resolvedRoute, RouteEvent.Type.ROUTE_ADDED));
+                .forEach(resolvedRoute -> setUpRouteRuleToLeaf(leafId, resolvedRoute, RouteEvent.Type.ROUTE_ADDED));
     }
 
     //--------------------------------------------------------------------------
