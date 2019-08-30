@@ -68,7 +68,7 @@ onos-netcfg localhost netcfg.json
 
 To send gratuitous ARP to the switch, use follow command from hosts:
 ```
-arp -c 1 -P -U [Host IP]
+arping -c 1 -P -U [Host IP]
 ```
 
 ### Demo with ONOS cluster
