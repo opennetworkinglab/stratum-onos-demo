@@ -1,24 +1,33 @@
 description: "Chassis config for leaf 2"
 chassis {
   platform: PLT_GOOGLE_LYRA
-  name: "Accton AS7712"
+  name: "Leaf 3 - QCT T7032-IX1"
 }
 nodes {
   id: 1
-  name: "AS7712 node 1"
+  name: "node 1"
   slot: 1
   index: 1
+  config_params {
+    vlan_configs {
+      vlan_id: 1
+      disable_l2_learning: true
+      block_unknown_unicast: true
+      block_unknown_multicast: true
+    }
+  }
 }
 singleton_ports {
-  id: 50
+  id: 68
   name: "1/0"
   slot: 1
   port: 1
   speed_bps: 100000000000
   node: 1
 }
+
 singleton_ports {
-  id: 54
+  id: 69
   name: "2/0"
   slot: 1
   port: 2
@@ -26,27 +35,26 @@ singleton_ports {
   node: 1
 }
 singleton_ports {
-  id: 58
+  id: 70
   name: "3/0"
   slot: 1
   port: 3
-  speed_bps: 40000000000
+  speed_bps: 100000000000
   node: 1
 }
 singleton_ports {
-  id: 62
+  id: 71
   name: "4/0"
   slot: 1
   port: 4
   speed_bps: 40000000000
   node: 1
 }
-# for debugging
 singleton_ports {
-  id: 72
-  name: "6/0"
+  id: 37
+  name: "5/0"
   slot: 1
-  port: 6
-  speed_bps: 40000000000
+  port: 5
+  speed_bps: 100000000000
   node: 1
 }

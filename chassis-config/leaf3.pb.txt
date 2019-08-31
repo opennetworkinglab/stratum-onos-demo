@@ -1,23 +1,32 @@
 description: "Chassis config for leaf 3"
 chassis {
   platform: PLT_GOOGLE_LYRA
-  name: "Quanta iX1-rangeley"
+  name: "Leaf 3 - Edgecore AS7712"
 }
 nodes {
   id: 1
+  name: "node 1"
   slot: 1
   index: 1
+  config_params {
+    vlan_configs {
+      vlan_id: 1
+      disable_l2_learning: true
+      block_unknown_unicast: true
+      block_unknown_multicast: true
+    }
+  }
 }
 singleton_ports {
-  id: 49
+  id: 50
   name: "1/0"
   slot: 1
   port: 1
-  speed_bps: 40000000000
+  speed_bps: 100000000000
   node: 1
 }
 singleton_ports {
-  id: 53
+  id: 54
   name: "2/0"
   slot: 1
   port: 2
@@ -25,10 +34,18 @@ singleton_ports {
   node: 1
 }
 singleton_ports {
-  id: 34
+  id: 58
   name: "3/0"
   slot: 1
   port: 3
   speed_bps: 100000000000
+  node: 1
+}
+singleton_ports {
+  id: 62
+  name: "4/0"
+  slot: 1
+  port: 4
+  speed_bps: 40000000000
   node: 1
 }
