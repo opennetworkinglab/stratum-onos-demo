@@ -1,7 +1,7 @@
 description: "Chassis config for leaf 2"
 chassis {
   platform: PLT_GOOGLE_LYRA
-  name: "Leaf 3 - QCT T7032-IX1"
+  name: "Leaf 2 - QCT T7032-IX1"
 }
 nodes {
   id: 1

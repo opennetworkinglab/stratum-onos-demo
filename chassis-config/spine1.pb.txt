@@ -1,11 +1,11 @@
 description: "Chassis config for spine 1"
 chassis {
   platform: PLT_GOOGLE_LYRA
-  name: "Spine 1 - Inventec d7032"
+  name: "Spine 1 - Inventec D7032"
 }
 nodes {
   id: 1
-  name: "Inventec d7032"
+  name: "node 1"
   slot: 1
   index: 1
   config_params {
