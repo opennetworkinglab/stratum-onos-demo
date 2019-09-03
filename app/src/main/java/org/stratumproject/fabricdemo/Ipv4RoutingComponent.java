@@ -378,18 +378,12 @@ public class Ipv4RoutingComponent {
             DeviceId srcDev = event.subject().src().deviceId();
             DeviceId dstDev = event.subject().dst().deviceId();
 
+            // Link events are bi-directional, i.e. fire twice
             if (mastershipService.isLocalMaster(srcDev)) {
                 mainComponent.getExecutorService().execute(() -> {
                     log.info("{} event! Configuring {}... linkSrc={}, linkDst={}",
                             event.type(), srcDev, srcDev, dstDev);
-                    setUpFabricRoutes(srcDev);
-                });
-            }
-            if (mastershipService.isLocalMaster(dstDev)) {
-                mainComponent.getExecutorService().execute(() -> {
-                    log.info("{} event! Configuring {}... linkSrc={}, linkDst={}",
-                            event.type(), dstDev, srcDev, dstDev);
-                    setUpFabricRoutes(dstDev);
+                    setUpFabricRoutes(srcDev, dstDev);
                 });
             }
         }
@@ -491,13 +485,14 @@ public class Ipv4RoutingComponent {
      * Set up routes on a given device to forward packets across the fabric,
      * making a distinction between spines and leaves.
      *
-     * @param deviceId the device ID.
+     * @param srcDev the device ID the routes are configured on.
+     * @param dstDev the device ID the routes are configured to.
      */
-    private void setUpFabricRoutes(DeviceId deviceId) {
-        if (isSpine(deviceId)) {
-            setUpSpineRoutes(deviceId);
+    private void setUpFabricRoutes(DeviceId srcDev, DeviceId dstDev) {
+        if (isSpine(srcDev)) {
+            setUpSpineRoute(srcDev, dstDev);
         } else {
-            setUpLeafRoutes(deviceId);
+            setUpLeafRoutes(srcDev);
         }
     }
 
@@ -507,42 +502,42 @@ public class Ipv4RoutingComponent {
      *
      * @param spineId the spine device ID
      */
-    private void setUpSpineRoutes(DeviceId spineId) {
+    private void setUpSpineRoute(DeviceId spineId, DeviceId leafId) {
+        log.info("Adding up spine route on {} to {}", spineId, leafId);
 
-        log.info("Adding up spine routes on {}...", spineId);
-
-        for (Device device : deviceService.getDevices()) {
-
-            if (isSpine(device.id())) {
-                // We only need routes to leaf switches. Ignore spines.
-                continue;
-            }
-
-            final DeviceId leafId = device.id();
-            final MacAddress leafMac = getMyStationMac(leafId);
-            final Set<Ip4Prefix> subnetsToRoute = getInterfaceIpv4Prefixes(leafId);
-
-            // Create group
-            int groupId = macToGroupId(leafMac);
-
-            final SetMultimap<MacAddress, PortNumber> macToPorts = HashMultimap.create();
-            getPortsToNextHop(spineId, leafMac)
-                    .forEach(p -> macToPorts.put(leafMac, p));
-
-            if (macToPorts.values().isEmpty()) {
-                // No routes to install.
-                return;
-            }
-
-            GroupDescription group = createNextHopGroup(
-                    groupId, macToPorts, spineId);
-
-            List<FlowRule> flowRules = subnetsToRoute.stream()
-                    .map(subnet -> createRoutingRule(spineId, subnet, groupId))
-                    .collect(Collectors.toList());
-
-            insertInOrder(group, flowRules);
+        if (!isSpine(spineId)) {
+            log.error("setUpSpineRoute() called for a source device that is not a spine: {}", spineId);
+            return;
         }
+
+        if (!isLeaf(leafId)) {
+            log.error("setUpSpineRoute() called for a destination device that is not a leaf: {}", leafId);
+            return;
+        }
+
+        final MacAddress leafMac = getMyStationMac(leafId);
+        final Set<Ip4Prefix> subnetsToRoute = getInterfaceIpv4Prefixes(leafId);
+
+        // Create group
+        int groupId = macToGroupId(leafMac);
+
+        final SetMultimap<MacAddress, PortNumber> macToPorts = HashMultimap.create();
+        getPortsToNextHop(spineId, leafMac)
+                .forEach(p -> macToPorts.put(leafMac, p));
+
+        if (macToPorts.values().isEmpty()) {
+            // No routes to install.
+            return;
+        }
+
+        GroupDescription group = createNextHopGroup(
+                groupId, macToPorts, spineId);
+
+        List<FlowRule> flowRules = subnetsToRoute.stream()
+                .map(subnet -> createRoutingRule(spineId, subnet, groupId))
+                .collect(Collectors.toList());
+
+        insertInOrder(group, flowRules);
     }
 
     private Collection<PortNumber> getPortsToNextHop(DeviceId deviceId, MacAddress dstMac) {
@@ -716,7 +711,7 @@ public class Ipv4RoutingComponent {
         }
 
         groupService.setBucketsForGroup(group.deviceId(), group.appCookie(),
-                                        group.buckets(), group.appCookie(), group.appId());
+                group.buckets(), group.appCookie(), group.appId());
     }
 
     /**
@@ -754,7 +749,6 @@ public class Ipv4RoutingComponent {
     private void setUpDevice(DeviceId deviceId) {
         log.info("*** IPV4 ROUTING - Starting initial set up for {}...", deviceId);
         setUpMyStationTable(deviceId);
-        setUpFabricRoutes(deviceId);
         hostService.getConnectedHosts(deviceId)
                 .forEach(host -> setUpHostRules(deviceId, host));
     }
