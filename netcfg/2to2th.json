@@ -2,12 +2,12 @@
   "devices": {
     "device:leaf1": {
       "basic": {
-        "managementAddress": "grpc://10.128.13.112:28000?device_id=1",
-        "driver": "stratum-fpm",
-        "pipeconf": "org.stratumproject.fabric-demo.fpm",
-        "manufacturer": "Quanta Cloud Technology",
-        "hwVersion": "T7032-IX1 (BCM Tomahawk)",
-        "swVersion": "stratum_bcm",
+        "managementAddress": "grpc://10.128.13.232:28000?device_id=1",
+        "driver": "stratum-tofino",
+        "pipeconf": "org.stratumproject.fabric-demo.montara",
+        "manufacturer": "Edge-Core Networks Corp.",
+        "hwVersion": "Wedge100BF-32X (Tofino)",
+        "swVersion": "stratum_bf",
         "latitude": "35",
         "longitude": "-103"
       },
@@ -100,14 +100,14 @@
     }
   },
   "hosts": {
-    "3c:fd:fe:9d:f1:48/None": {
+    "3C:FD:FE:A6:E7:68/None": {
       "basic": {
         "name": "h1",
         "latitude": "31",
         "longitude": "-106"
       }
     },
-    "3c:fd:fe:9d:f1:49/None": {
+    "3C:FD:FE:A6:E7:69/None": {
       "basic": {
         "name": "h2",
         "latitude": "31",
