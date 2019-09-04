@@ -1,4 +1,4 @@
-export ONOS_APPS=gui,drivers,drivers.stratum,drivers.barefoot,generaldeviceprovider,netcfghostprovider,lldpprovider,proxyarp
+export ONOS_APPS=gui,drivers,drivers.stratum,drivers.barefoot,generaldeviceprovider,netcfghostprovider,lldpprovider,proxyarp,route-service
 
 export ONOS_USER=ubuntu
 export ONOS_GROUP=ubuntu
