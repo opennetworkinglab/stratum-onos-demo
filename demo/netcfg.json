@@ -180,28 +180,28 @@
     }
   },
   "hosts": {
-    "3c:fd:fe:a6:e7:68/None": {
+    "3c:fd:fe:9d:f0:38/None": {
       "basic": {
         "name": "h1",
         "latitude": "31",
         "longitude": "-120"
       }
     },
-    "3c:fd:fe:a6:e7:69/None": {
+    "3c:fd:fe:9d:f0:39/None": {
       "basic": {
         "name": "h2",
         "latitude": "31",
         "longitude": "-107.5"
       }
     },
-    "3c:fd:fe:9d:f0:38/None": {
+    "3c:fd:fe:a6:e7:68/None": {
       "basic": {
         "name": "h3",
         "latitude": "31",
         "longitude": "-95"
       }
     },
-    "3c:fd:fe:9d:f0:39/None": {
+    "3c:fd:fe:a6:e7:69/None": {
       "basic": {
         "name": "h4",
         "latitude": "31",
