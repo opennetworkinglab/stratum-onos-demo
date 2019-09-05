@@ -1,6 +1,6 @@
 #!/bin/bash
 set -x
-export PKTGEN_ROOT=${PKTGEN_ROOT:$HOME/pktgen-3.6.5}
+export PKTGEN_ROOT=${PKTGEN_ROOT:-$HOME/pktgen-3.6.5}
 
 # -l: Core list
 # -n: number of channels
