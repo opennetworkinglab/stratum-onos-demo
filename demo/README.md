@@ -97,3 +97,12 @@ source cell_profile.sh
 stc setup
 stc demo-setup.xml
 ```
+
+#### Use pktgen with DPDK
+
+Make DPDK and pktgen
+
+Bind interfaces to DPDK driver `make bind-dpdk`
+(to unbind the DPDK, use `make unbind-dpdk`)
+
+Start the pktgen `make pktgen` and type `start 0-3` to start the traffic

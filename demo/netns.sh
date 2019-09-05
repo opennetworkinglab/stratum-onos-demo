@@ -4,11 +4,11 @@ set -x
 function exec_cmd_in_netns {
     ns=$1
     shift
-    ip netns exec $ns $@
+    sudo ip netns exec $ns $@
 }
 
 function bind_iface_to_netns {
-    ip link set $1 netns $2
+    sudo ip link set $1 netns $2
     exec_cmd_in_netns $2 ip a add $3 dev $1
     exec_cmd_in_netns $2 ip link set dev $1 up
     exec_cmd_in_netns $2 ip r add default via $4
@@ -16,19 +16,19 @@ function bind_iface_to_netns {
 }
 
 function check_and_remove_netns {
-  ip netns list | grep $1
+  sudo ip netns list | grep $1
   if [ $? == 0 ]; then
-    ip netns del $1
+    sudo ip netns del $1
   fi
 }
 
 function start {
-  ip -all netns delete
+  sudo ip -all netns delete
   set -e
-  ip netns add h1
-  ip netns add h2
-  ip netns add h3
-  ip netns add h4
+  sudo ip netns add h1
+  sudo ip netns add h2
+  sudo ip netns add h3
+  sudo ip netns add h4
 
   bind_iface_to_netns ens6f0 h1 10.0.1.1/24 10.0.1.100 00:aa:00:00:00:01
   bind_iface_to_netns ens6f1 h2 10.0.2.1/24 10.0.2.100 00:aa:00:00:00:02
@@ -37,7 +37,7 @@ function start {
 }
 
 function stop {
-  ip -all netns delete
+  sudo ip -all netns delete
 }
 
 case $1 in

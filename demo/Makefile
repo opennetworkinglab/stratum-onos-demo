@@ -5,5 +5,11 @@ netns-start: pktgen-stop
 netns-stop:
 	./netns.sh stop
 
-pktgen: netns-stop
+bind-dpdk:
+	./dpdk-dev.sh bind
+
+unbind-dpdk:
+	./dpdk-dev.sh unbind
+
+pktgen: netns-stop bind-dpdk
 	./pktgen.sh

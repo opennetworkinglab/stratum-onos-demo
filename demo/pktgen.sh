@@ -17,8 +17,8 @@ sudo -E $PKTGEN_ROOT/app/x86_64-native-linuxapp-gcc/app/pktgen \
         -l 0,1-4,11-14 \
         -n 4 \
         --proc-type auto \
-        -w 0000:83:00.0 -w 0000:83:00.1 \ # H1 and H2
-        -w 0000:03:00.0 -w 0000:03:00.1 \ # H3 and H4
+        -w 0000:83:00.0 -w 0000:83:00.1 \
+        -w 0000:03:00.0 -w 0000:03:00.1 \
         -- \
         -P -T --crc-strip \
         -m [1:2].0 \
