@@ -98,11 +98,70 @@ stc setup
 stc demo-setup.xml
 ```
 
-#### Use pktgen with DPDK
+### Use network namespace to emulate hosts of the topology
 
-Make DPDK and pktgen
+To create network namespace and bind interface to it, modify the `netns.sh` script to use
+correct network interfaces, we are using these ports for this demo:
 
-Bind interfaces to DPDK driver `make bind-dpdk`
-(to unbind the DPDK, use `make unbind-dpdk`)
+```
+ens1f0
+ens1f1
+ens6f0
+ens6f1
+```
 
-Start the pktgen `make pktgen` and type `start 0-3` to start the traffic
+To start network namespaces, use `./netns.sh start` to start them.
+
+To attach a network namespace, you can use `sudo ip netns exec [ns name] bash` to run bash shell in
+specific network namespace.
+
+To remove all network namespaces, use `./nents.sh stop` command.
+
+### Use Pktgen with DPDK to generate the traffic
+
+### Requirements
+
+ - DPDK: [19.05.0](http://core.dpdk.org/download/)
+ - Pktgen: [3.6.5](https://git.dpdk.org/apps/pktgen-dpdk/)
+
+After DPDK and Pktgen build and installed, setup path of DPDK and Pktgen before use `dpdk-dev.sh` and `pktgen.sh` script
+
+```bash
+export DPDK_ROOT=[DPDK dir]
+export PKTGEN_ROOT=[Pktgen dir]
+```
+
+Use `./dpdk-dev.sh status` to check NICs, modify `pktgen.sh` and `dpdk-dev.sh` to use correct PCIe device, here we are using these 4 devices which represent 4 40G QSFP ports:
+
+```
+0000:03:00.0
+0000:03:00.1
+0000:83:00.0
+0000:83:00.1
+```
+
+And use `./dpdk-dev.sh bind` command to bind network interfaces to DPDK driver.
+
+### Start packet generator
+
+Use `pktgen.sh` to start the pktgen shell with default settings.
+
+You can also cutomize packets to generate by modifying the `pktgen.pkt` file.
+
+To start the traffic on all ports:
+
+```
+pktgen> start 0-3
+```
+
+If hosts did not detect by the ONOS, run the following command to generate ARPs:
+
+```
+pktgen> start 0-3 arp gratuitous
+```
+
+### Stop DPDK and packet generator
+
+Type `quit` in pktgen shell to stop all traffic and bring down interfaces.
+
+To unbind the DPDK, use `./dpdk-dev.sh unbind` command, which resets the driver for all ports.
