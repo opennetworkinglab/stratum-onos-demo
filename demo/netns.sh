@@ -30,10 +30,10 @@ function start {
   sudo ip netns add h3
   sudo ip netns add h4
 
-  bind_iface_to_netns ens6f0 h1 10.0.1.1/24 10.0.1.100 00:aa:00:00:00:01
-  bind_iface_to_netns ens6f1 h2 10.0.2.1/24 10.0.2.100 00:aa:00:00:00:02
-  bind_iface_to_netns ens1f0 h3 10.0.3.1/24 10.0.3.100 00:aa:00:00:00:03
-  bind_iface_to_netns ens1f1 h4 10.0.4.1/24 10.0.4.100 00:aa:00:00:00:04
+  bind_iface_to_netns ens1f0 h1 10.0.1.1/24 10.0.1.100 00:aa:00:00:00:01
+  bind_iface_to_netns ens1f1 h2 10.0.2.1/24 10.0.2.100 00:aa:00:00:00:02
+  bind_iface_to_netns ens6f0 h3 10.0.3.1/24 10.0.3.100 00:aa:00:00:00:03
+  bind_iface_to_netns ens6f1 h4 10.0.4.1/24 10.0.4.100 00:aa:00:00:00:04
 }
 
 function stop {
