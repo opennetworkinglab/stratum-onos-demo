@@ -44,7 +44,7 @@ development) or in cluster mode.
 #### Start ONOS in local mode
 
 ```
-ONOS_APPS=gui,drivers,drivers.stratum,drivers.barefoot,generaldeviceprovider,netcfghostprovider,lldpprovider,proxyarp ok clean debug
+ONOS_APPS=gui,drivers,drivers.stratum,drivers.barefoot,generaldeviceprovider,netcfghostprovider,lldpprovider,proxyarp,route-service ok clean debug
 ```
 
 #### Set packet I/O log level to trace
@@ -62,6 +62,13 @@ cd app/
 onos-app localhost reinstall! target/fabric-demo-1.0-SNAPSHOT.oar
 cd ../demo
 onos-netcfg localhost netcfg.json
+```
+
+#### Send gratuitous ARP reply from hosts
+
+To send gratuitous ARP to the switch, use follow command from hosts:
+```
+arping -c 1 -P -U [Host IP]
 ```
 
 ### Demo with ONOS cluster

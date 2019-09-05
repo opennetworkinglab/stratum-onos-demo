@@ -168,7 +168,7 @@ onos> hosts -s
 
 `h1a` and `h1b` are connnected to the same leaf and they belong to the same
 subnet. For this reason their packets are bridged
- 
+
 Let's now try to ping hosts on different leaves/subnets.
 
 ```
@@ -186,13 +186,14 @@ fabric interface IP address, we have configured hosts in mininet with static ARP
 entries. As such, `h4` will not even try to resolve the MAC address of its
 gateway.
 
-The only option is to have `h4` generate an ARP request.
+The only option is to have `h4` generate an ARP packet. Use `gratuitousArp` command
+to make all hosts generate ARP packets so ONOS can learn the location from them.
 
 ```
-mininet> h4 arping 1.1.1.1
+mininet> gratuitousArp
 ```
 
-In the ONOS log, you should see messages showing that the location of `h4` has
+In the ONOS log, you should see messages showing that the location of every hosts has
 been discovered. Let's try again pinging from `h1a`:
 
 ```

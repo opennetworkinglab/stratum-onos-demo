@@ -29,7 +29,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <onos.version>2.2.0-rc1</onos.version>
+        <onos.version>2.2.0</onos.version>
         <onos.app.name>org.stratumproject.fabric-demo</onos.app.name>
         <onos.app.title>Stratum fabric demo app</onos.app.title>
         <onos.app.origin>org.stratumproject</onos.app.origin>
@@ -80,6 +80,18 @@
         <dependency>
             <groupId>org.onosproject</groupId>
             <artifactId>onlab-misc</artifactId>
+            <version>${onos.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.onosproject</groupId>
+            <artifactId>onos-apps-routing-api</artifactId>
+            <version>${onos.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.onosproject</groupId>
+            <artifactId>onos-apps-route-service-api</artifactId>
             <version>${onos.version}</version>
         </dependency>
 
