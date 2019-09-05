@@ -9,7 +9,8 @@
         "hwVersion": "Wedge100BF-32X (BFN Tofino)",
         "swVersion": "stratum_bf",
         "latitude": "35",
-        "longitude": "-120"
+        "longitude": "-120",
+        "name": "Wedge100BF-32X (Tofino)"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:aa:00:00:00:01",
@@ -25,7 +26,8 @@
         "hwVersion": "T7032-IX1 (BCM Tomahawk)",
         "swVersion": "stratum_bcm",
         "latitude": "35",
-        "longitude": "-107.5"
+        "longitude": "-107.5",
+        "name": "T7032-IX1 (Tomahawk)"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:aa:00:00:00:02",
@@ -41,7 +43,8 @@
         "hwVersion": "AS7712-32X (BCM Tomahawk)",
         "swVersion": "stratum_bcm",
         "latitude": "35",
-        "longitude": "-95"
+        "longitude": "-95",
+        "name": "AS7712-32X (Tomahawk)"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:aa:00:00:00:03",
@@ -57,7 +60,8 @@
         "hwVersion": "D5254 (BFN Tofino)",
         "swVersion": "stratum_bf",
         "latitude": "35",
-        "longitude": "-82.5"
+        "longitude": "-82.5",
+        "name": "D5254 (Tofino)"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:aa:00:00:00:04",
@@ -73,7 +77,8 @@
         "hwVersion": "Z9100 (BCM Tomahawk)",
         "swVersion": "stratum_bcm",
         "latitude": "35",
-        "longitude": "-70"
+        "longitude": "-70",
+        "name": "Z9100 (Tomahawk)"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:aa:00:00:00:05",
@@ -89,7 +94,8 @@
         "hwVersion": "D7032Q28B (BCM Tomahawk)",
         "swVersion": "stratum_bcm",
         "latitude": "40",
-        "longitude": "-105"
+        "longitude": "-105",
+        "name": "D7032Q28B (Tomahawk)"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:bb:00:00:00:01",
@@ -105,7 +111,8 @@
         "hwVersion": "AG9064v1 (BFN Tofino)",
         "swVersion": "stratum_bf",
         "latitude": "40",
-        "longitude": "-95"
+        "longitude": "-95",
+        "name": "AG9064v1 (Tofino)"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:bb:00:00:00:02",
@@ -121,7 +128,8 @@
         "hwVersion": "Stordis (BFN Tofino)",
         "swVersion": "stratum_bf",
         "latitude": "40",
-        "longitude": "-85"
+        "longitude": "-85",
+        "name": "Stordis (Tofino)"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:bb:00:00:00:03",
