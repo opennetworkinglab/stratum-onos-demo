@@ -1,5 +1,5 @@
 #!/bin/bash
-export DPDK_ROOT=$HOME/dpdk
+export DPDK_ROOT=${DPDK_ROOT:$HOME/dpdk}
 
 function bind {
     sudo modprobe uio
