@@ -100,7 +100,14 @@ class CustomTopo(Topo):
         self.addLink(h3, leaf2)  # port 3
         self.addLink(h4, leaf2)  # port 4
 
+def do_gratuitousArp(self, line):
+    for host in self.mn.hosts:
+        for ip_prefix in host.ips:
+            ip = ip_prefix.split("/")[0]
+            print "Gratuitous %s IP %s" % (host, ip)
+            host.cmd("arping -c 1 -P -U %s" % (ip, ))
 
+CLI.do_gratuitousArp = do_gratuitousArp
 def main():
     net = Mininet(topo=CustomTopo(), controller=None)
     net.start()

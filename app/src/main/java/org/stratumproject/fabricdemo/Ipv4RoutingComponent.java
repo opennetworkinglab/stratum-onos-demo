@@ -27,11 +27,7 @@ import org.onlab.packet.MacAddress;
 import org.onlab.util.ItemNotFoundException;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.mastership.MastershipService;
-import org.onosproject.net.Device;
-import org.onosproject.net.DeviceId;
-import org.onosproject.net.Host;
-import org.onosproject.net.Link;
-import org.onosproject.net.PortNumber;
+import org.onosproject.net.*;
 import org.onosproject.net.config.NetworkConfigService;
 import org.onosproject.net.device.DeviceEvent;
 import org.onosproject.net.device.DeviceListener;
@@ -56,6 +52,7 @@ import org.onosproject.net.pi.runtime.PiAction;
 import org.onosproject.net.pi.runtime.PiActionParam;
 import org.onosproject.net.pi.runtime.PiActionProfileGroupId;
 import org.onosproject.net.pi.runtime.PiTableAction;
+import org.onosproject.routeservice.*;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -89,6 +86,7 @@ public class Ipv4RoutingComponent {
     private final HostListener hostListener = new InternalHostListener();
     private final LinkListener linkListener = new InternalLinkListener();
     private final DeviceListener deviceListener = new InternalDeviceListener();
+    private final RouteListener routeListener = new InternalRouteListener();
 
     private ApplicationId appId;
 
@@ -126,6 +124,9 @@ public class Ipv4RoutingComponent {
     @Reference(cardinality = ReferenceCardinality.MANDATORY)
     private MainComponent mainComponent;
 
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
+    private RouteService routeService;
+
     //--------------------------------------------------------------------------
     // COMPONENT ACTIVATION.
     //
@@ -140,6 +141,7 @@ public class Ipv4RoutingComponent {
         hostService.addListener(hostListener);
         linkService.addListener(linkListener);
         deviceService.addListener(deviceListener);
+        routeService.addListener(routeListener);
 
         // Schedule set up for all devices.
         mainComponent.scheduleTask(this::setUpAllDevices, AppConstants.INITIAL_SETUP_DELAY);
@@ -152,6 +154,7 @@ public class Ipv4RoutingComponent {
         hostService.removeListener(hostListener);
         linkService.removeListener(linkListener);
         deviceService.removeListener(deviceListener);
+        routeService.removeListener(routeListener);
 
         log.info("Stopped");
     }
@@ -421,6 +424,112 @@ public class Ipv4RoutingComponent {
         }
     }
 
+    /**
+     * Listener of route events, which triggers configuration of routing rules to
+     * forward packets to a specific next hop.
+     */
+    private class InternalRouteListener implements RouteListener {
+
+        @Override
+        public boolean isRelevant(RouteEvent event) {
+            switch (event.type()) {
+                case ROUTE_ADDED:
+                case ROUTE_REMOVED:
+                    break;
+                case ROUTE_UPDATED:
+                case ALTERNATIVE_ROUTES_CHANGED:
+                default:
+                    return false;
+            }
+            return true;
+        }
+
+        @Override
+        public void event(RouteEvent event) {
+            mainComponent.getExecutorService().execute(() -> {
+                log.info("{} event! {}", event.type(), event.subject());
+                setUpRouteToDevices(event.subject(), event.type());
+            });
+        }
+    }
+
+    /**
+     * Set up a route to all devices.
+     *
+     * @param route the route
+     */
+    private void setUpRouteToDevices(ResolvedRoute route, RouteEvent.Type op) {
+        stream(deviceService.getAvailableDevices())
+                .map(Device::id)
+                .filter(mastershipService::isLocalMaster)
+                .forEach(deviceId -> {
+                    if (isSpine(deviceId)) {
+                        setUpRouteRuleToSpine(deviceId, route, op);
+                    } else {
+                        setUpRouteRuleToLeaf(deviceId, route, op);
+                    }
+                });
+    }
+
+    /**
+     * Installs a route rule for a leaf.
+     * If the next hop connect to the leaf, route to the next hop directly.
+     * If the next hop does not connect to the leaf, route to spines by using the ECMP group.
+     *
+     * @param deviceId the leaf device id
+     * @param route the route
+     * @param op the operation, can be ROUTE_ADDED or ROUTE_REMOVED
+     */
+    private void setUpRouteRuleToLeaf(DeviceId deviceId, ResolvedRoute route, RouteEvent.Type op) {
+        HostId nextHopId = HostId.hostId(route.nextHopMac(), route.nextHopVlan());
+        Host nextHop = hostService.getHost(nextHopId);
+        if (nextHop == null || nextHop.location() == null) {
+            log.warn("Cannot find next hop %s, ignore it", route.nextHop());
+            return;
+        }
+        int groupId;
+        if (nextHop.location().deviceId().equals(deviceId)) {
+            // Next hop host connect to this device
+            groupId = macToGroupId(nextHop.mac());
+        } else {
+            // Next hop host does not connect to this device, need to send packet through spines
+            groupId = DEFAULT_ECMP_GROUP_ID;
+        }
+        FlowRule routeRule = createRoutingRule(deviceId, route.prefix().getIp4Prefix(), groupId);
+        if (op == RouteEvent.Type.ROUTE_ADDED) {
+            flowRuleService.applyFlowRules(routeRule);
+        } else {
+            flowRuleService.removeFlowRules(routeRule);
+        }
+    }
+
+    /**
+     * Installs a route rule for a spine.
+     * The packet will be routed to the leaf which connect to the next hop.
+     *
+     * @param deviceId the spine device id
+     * @param route the route
+     * @param op the operation, can be ROUTE_ADDED or ROUTE_REMOVED
+     */
+    private void setUpRouteRuleToSpine(DeviceId deviceId, ResolvedRoute route, RouteEvent.Type op) {
+        HostId nextHopId = HostId.hostId(route.nextHopMac(), route.nextHopVlan());
+        Host nextHop = hostService.getHost(nextHopId);
+        if (nextHop == null || nextHop.location() == null) {
+            log.warn("Cannot find next hop %s, ignore it", route.nextHop());
+            return;
+        }
+        // Find the device mac which connect to the next hop host.
+        MacAddress leafMac = getMyStationMac(nextHop.location().deviceId());
+        int groupId = macToGroupId(leafMac);
+        FlowRule routeRule = createRoutingRule(deviceId, route.prefix().getIp4Prefix(), groupId);
+        if (op == RouteEvent.Type.ROUTE_ADDED) {
+            flowRuleService.applyFlowRules(routeRule);
+        } else {
+            flowRuleService.removeFlowRules(routeRule);
+        }
+    }
+
+
     //--------------------------------------------------------------------------
     // ROUTING POLICY METHODS
     //
@@ -538,6 +647,12 @@ public class Ipv4RoutingComponent {
                 .collect(Collectors.toList());
 
         insertInOrder(group, flowRules);
+
+        // Install resolved routes from route store
+        routeService.getRouteTables().stream()
+                .map(routeService::getResolvedRoutes)
+                .flatMap(Collection::stream)
+                .forEach(resolvedRoute -> setUpRouteRuleToSpine(spineId, resolvedRoute, RouteEvent.Type.ROUTE_ADDED));
     }
 
     private Collection<PortNumber> getPortsToNextHop(DeviceId deviceId, MacAddress dstMac) {
@@ -615,6 +730,12 @@ public class Ipv4RoutingComponent {
                 .collect(Collectors.toList());
 
         insertInOrder(ecmpGroup, flowRules);
+
+        // Install resolved routes from route store
+        routeService.getRouteTables().stream()
+                .map(routeService::getResolvedRoutes)
+                .flatMap(Collection::stream)
+                .forEach(resolvedRoute -> setUpRouteRuleToLeaf(leafId, resolvedRoute, RouteEvent.Type.ROUTE_ADDED));
     }
 
     //--------------------------------------------------------------------------
