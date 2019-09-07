@@ -70,7 +70,7 @@
     },
     "device:leaf5": {
       "basic": {
-        "managementAddress": "grpc://10.128.13.113:28001?device_id=1",
+        "managementAddress": "grpc://10.128.13.113:28000?device_id=1",
         "driver": "stratum-fpm",
         "pipeconf": "org.stratumproject.fabric-demo.fpm",
         "manufacturer": "Dell Inc.",
@@ -121,7 +121,7 @@
     },
     "device:spine3": {
       "basic": {
-        "managementAddress": "grpc://10.128.13.0:28000?device_id=1",
+        "managementAddress": "grpc://10.128.13.116:28000?device_id=1",
         "driver": "stratum-tofino",
         "pipeconf": "org.stratumproject.fabric-demo.mavericks",
         "manufacturer": "Stordis",
@@ -177,6 +177,16 @@
           ]
         }
       ]
+    },
+    "device:leaf5/62": {
+      "interfaces": [
+        {
+          "name": "leaf5-62",
+          "ips": [
+            "10.0.5.100/24"
+          ]
+        }
+      ]
     }
   },
   "hosts": {
@@ -207,6 +217,14 @@
         "latitude": "31",
         "longitude": "-82.5"
       }
+    },
+    "2C:60:0C:E7:33:40/None": {
+      "basic": {
+        "name": "Upstream Router",
+        "latitude": "31",
+        "longitude": "-70"
+      }
     }
+
   }
 }
