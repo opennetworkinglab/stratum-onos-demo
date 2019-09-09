@@ -1,0 +1,54 @@
+disable 0-3 vlan
+set 0-3 size 128
+set 0-3 rate 100
+enable 0-3 range
+
+set 0 src mac 3c:fd:fe:9d:f0:38
+set 0 dst mac 00:aa:00:00:00:01
+set 0 src ip 10.0.1.1
+set 0 dst ip 10.0.3.1
+
+set 1 src mac 3c:fd:fe:9d:f0:39
+set 1 dst mac 00:aa:00:00:00:02
+set 1 src ip 10.0.2.1
+set 1 dst ip 10.0.4.1
+
+set 2 src mac 3C:FD:FE:A6:E7:68
+set 2 dst mac 00:aa:00:00:00:03
+set 2 src ip 10.0.3.1
+set 2 dst ip 10.0.2.1
+
+set 3 src mac 3c:fd:fe:a6:e7:69
+set 3 dst mac 00:aa:00:00:00:04
+set 3 src ip 10.0.4.1
+set 3 dst ip 10.0.1.1
+
+echo "Wait for 1 second before we send arp gratuitous"
+sleep 1
+start 0-3 arp gratuitous
+
+range 0 src mac 3c:fd:fe:9d:f0:38 3c:fd:fe:9d:f0:38 3c:fd:fe:9d:f0:38 00:00:00:00:00:00
+range 0 dst mac 00:aa:00:00:00:01 00:aa:00:00:00:01 00:aa:00:00:00:01 00:00:00:00:00:00
+range 0 src ip 10.0.1.1 10.0.1.1 10.0.1.255 0.0.0.1
+range 0 dst ip 10.0.3.1 10.0.3.1 10.0.3.1 0.0.0.0
+range 0 proto tcp
+
+range 1 src mac 3c:fd:fe:9d:f0:39 3c:fd:fe:9d:f0:39 3c:fd:fe:9d:f0:39 00:00:00:00:00:00
+range 1 dst mac 00:aa:00:00:00:02 00:aa:00:00:00:02 00:aa:00:00:00:02 00:00:00:00:00:00
+range 1 src ip 10.0.2.1 10.0.2.1 10.0.2.255 0.0.0.1
+range 1 dst ip 10.0.4.1 10.0.4.1 10.0.4.1 0.0.0.0
+range 1 proto tcp
+
+range 2 src mac 3C:FD:FE:A6:E7:68 3C:FD:FE:A6:E7:68 3C:FD:FE:A6:E7:68 00:00:00:00:00:00
+range 2 dst mac 00:aa:00:00:00:03 00:aa:00:00:00:03 00:aa:00:00:00:03 00:00:00:00:00:00
+range 2 src ip 10.0.3.1 10.0.3.1 10.0.3.255 0.0.0.1
+range 2 dst ip 10.0.2.1 10.0.2.1 10.0.2.1 0.0.0.0
+range 2 proto tcp
+
+range 3 src mac 3C:FD:FE:A6:E7:69 3C:FD:FE:A6:E7:69 3C:FD:FE:A6:E7:69 00:00:00:00:00:00
+range 3 dst mac 00:aa:00:00:00:04 00:aa:00:00:00:04 00:aa:00:00:00:04 00:00:00:00:00:00
+range 3 src ip 10.0.4.1 10.0.4.1 10.0.4.255 0.0.0.1
+range 3 dst ip 10.0.1.1 10.0.1.1 10.0.1.1 0.0.0.0
+range 3 proto tcp
+
+
