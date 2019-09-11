@@ -33,21 +33,21 @@ bmv2: bmv2-pp
 	###
 	mkdir -p ${build_dir}/bmv2
 	${p4c_bmv2} -o ${build_dir}/bmv2/bmv2.json \
-		--p4runtime-files ${build_dir}/bmv2/p4info.txt max.p4
+		--p4runtime-files ${build_dir}/bmv2/p4info.txt main.p4
 	echo ${cpu_port_bmv2} > ${build_dir}/bmv2/cpu_port.txt
 
 bmv2-pp:
 	### Generate preprocessed source (for debugging)
 	###
 	mkdir -p ${build_dir}/bmv2
-	${p4c_bmv2} --pp ${build_dir}/bmv2/pp.p4 max.p4
+	${p4c_bmv2} --pp ${build_dir}/bmv2/pp.p4 main.p4
 
 tofino-base:
 	### Generate tofino.bin and p4info
 	###
 	mkdir -p ${build_dir}/tofino-$(NAME)
 	${p4c_tofino} -g -o ${build_dir}/tofino-$(NAME) -DCPU_PORT=$(CPU_PORT) \
-		--p4runtime-files ${build_dir}/tofino-$(NAME)/p4info.txt max.p4
+		--p4runtime-files ${build_dir}/tofino-$(NAME)/p4info.txt main.p4
 	echo $(CPU_PORT) > ${build_dir}/tofino-$(NAME)/cpu_port.txt
 
 tofino-mavericks:
@@ -68,7 +68,7 @@ fpm:
 			--target=BCM \
 			--Wdisable=legacy \
 			--Wwarn=all \
-			max.p4" \
+			main.p4" \
 		--p4_info_file=${build_dir}/fpm/p4info.txt \
 		--p4_pipeline_config_text_file=${build_dir}/fpm/pipeline_config.txt \
 		--p4_pipeline_config_binary_file=${build_dir}/fpm/pipeline_config.bin \
