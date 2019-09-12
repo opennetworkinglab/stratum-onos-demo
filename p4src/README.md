@@ -15,10 +15,15 @@ Compiled artifacts can be found under `./build`
 ### Prerequisites
 
 The Makefile uses a containerized version of the different p4c backends for each
-target, so the only prerequisites are:
+target, so the only prerequisites are.
 
 * Docker
 * `make`
+
+**Note on the Tofino backend**: The Docker image with the p4c backend for Tofino
+is not public. If you want to re-use the same Makefile, you should update that
+variable `bf_sde_img` with a Docker image that contains a full installation of
+the Barefoot SDE, or just the `p4c-compilers` package.
 
 ### Make commands
 
