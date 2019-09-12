@@ -23,12 +23,6 @@
 # tor.p4.
 
 table_addenda_map {
-  key: "ingress.l2_fwd_table"
-  value {
-    type: P4_TABLE_L2_MY_STATION
-  }
-}
-table_addenda_map {
   key: "ingress.l2_fwd.l2_unicast_table"
   value {
     type: P4_TABLE_L2_UNICAST
@@ -42,60 +36,10 @@ table_addenda_map {
   }
 }
 table_addenda_map {
-  key: "ingress.l3_fwd.l2_broadcast_table"
-  value {
-    type: P4_TABLE_L2_MULTICAST
-    addenda_names: "l2-vlan-fallback"
-  }
-}
-table_addenda_map {
-  key: "ingress.l2_fwd.l2_broadcast_table"
-  value {
-    type: P4_TABLE_L2_MULTICAST
-    addenda_names: "l2-vlan-fallback"
-  }
-}
-table_addenda_map {
-  key: "ingress.l3_fwd_table"
-  value {
-    type: P4_TABLE_L3_IP
-    #addenda_names: "l3-vrf-fallback"
-  }
-}
-table_addenda_map {
   key: "ingress.l3_fwd.l3_fwd_table"
   value {
     type: P4_TABLE_L3_IP
     #addenda_names: "l3-vrf-fallback"
-  }
-}
-table_addenda_map {
-  key: "ingress.vrf_classifier_table"
-  value {
-    type: P4_TABLE_L3_IP
-    addenda_names: "l3-vrf-fallback"
-  }
-}
-
-# Defines an internal match on the fallback VRF ID.
-table_addenda {
-  name: "l3-vrf-fallback"
-  internal_match_fields {
-    type: P4_FIELD_TYPE_VRF
-    value {
-      u32: 2047  # kVrfFallback
-    }
-  }
-}
-
-# Defines an internal match on the override VRF ID.
-table_addenda {
-  name: "l3-vrf-override"
-  internal_match_fields {
-    type: P4_FIELD_TYPE_VRF
-    value {
-      u32: 2046  # kVrfOverride
-    }
   }
 }
 
@@ -109,3 +53,15 @@ table_addenda {
     }
   }
 }
+
+# If you don't care about VRF, uncomment the following to add an internal match
+# on VRF 0. You then don't have to match on the VRF in the L3 table.
+#table_addenda {
+#  name: "l3-vrf-fallback"
+#  internal_match_fields {
+#    type: P4_FIELD_TYPE_VRF
+#    value {
+#      u32: 0
+#    }
+#  }
+#}
