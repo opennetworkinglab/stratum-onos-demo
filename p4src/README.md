@@ -1,4 +1,4 @@
-# P4 source code
+# Fabric demo P4 program
 
 This directory contains the P4 program used in the demo. 
 

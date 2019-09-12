@@ -1,4 +1,5 @@
 # Copyright 2019 Google LLC
+# Copyright 2019-present Open Networking Foundation
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,14 +14,10 @@
 # limitations under the License.
 
 # This file contains annotation map data for P4 tables that the p4c backend
-# expects to find when compiling Stratum P4 programs.
-# TODO: Change the file name to reflect its common usage across
-# all Stratum P4 roles,
+# expects to find when compiling P4 programs.
 
-# The L3 table annotations reference addenda that sets up a fallback or override
-# VRF when the switch ultimately maps a P4 runtime table update to a flow entry.
-# The first set of entries applies to the tables in the P4_16 version of
-# tor.p4.
+# table_addenda_map can be used to set up up a fallback or override to map
+# P4Runtime table entries to SDK ones.
 
 table_addenda_map {
   key: "ingress.l2_fwd.l2_unicast_table"

@@ -74,7 +74,7 @@ fpm:
 		--p4_info_file=${build_dir}/fpm/p4info.txt \
 		--p4_pipeline_config_text_file=${build_dir}/fpm/pipeline_config.txt \
 		--p4_pipeline_config_binary_file=${build_dir}/fpm/pipeline_config.bin \
-		--p4c_annotation_map_files=max_table_map.pb.txt,max_field_map.pb.txt \
+		--p4c_annotation_map_files=table_map.pb.txt,field_map.pb.txt \
 		--target_parser_map_file=standard_parser_map.pb.txt \
 		--slice_map_file=sliced_field_map.pb.txt
 	echo ${cpu_port_fpm} > ${build_dir}/fpm/cpu_port.txt
