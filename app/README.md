@@ -1,14 +1,13 @@
 # Fabric demo ONOS app
 
-This directory contain the implementation of the ONOS app used in the Stratum
-fabric demo.
+This directory contain the implementation of the ONOS app used in the demo.
 
 ## Steps to build the app
 
 ### Prerequisites
 
-* Apache Maven (`brew install maven` if on macOS)
-* [JDK 11](https://www.azul.com/downloads/zulu-community/)
+* Docker
+* make
 
 ### Build P4 program
 
@@ -26,5 +25,5 @@ The P4 build artifacts are symlinked under `app/src/main/resources/p4c-out`.
 
 ```
 cd app
-mvn clean package
+make build
 ```
