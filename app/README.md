@@ -19,7 +19,8 @@ cd p4src
 make build
 ```
 
-The P4 build artifacts are symlinked under `app/src/main/resources/p4c-out`.
+The P4 build artifacts are copied under `app/src/main/resources/p4c-out` when
+building the app.
 
 ### Build app
 

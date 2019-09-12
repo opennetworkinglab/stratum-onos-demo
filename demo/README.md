@@ -1,167 +1,97 @@
-# Instructions to run the demo
+# Scripts and instructions to run the demo
 
-## 1. Start Stratum on switches
+Before starting:
 
-Manually start the docker container for stratum_bf and stratum_bcm
+* Run Stratum on all switches using the chassis config files in
+  [./chassis-config](./chassis-config)
+* Build P4 program for all targets ([p4src/README.md](../p4src/README.md))
+* Build ONOS app ([app/README.md](../app/README.md))
 
-## 2. Build P4 program and app
+## 1. Start ONOS and connect to switches
 
-#### Clone and build ONOS
+Start ONOS
 
-```
-git clone https://github.com/opennetworkinglab/onos.git
-export ONOS_ROOT=<path-to-onos-dir>
-source $ONOS_ROOT/tools/dev/bash_profile
-cd $ONOS_ROOT
-bazel build onos
-```
+    make onos-start
 
-#### Build P4 program
+Install app (and pipeconf):
 
-For all backends
+    make app-install
 
-```
-cd p4src
-make build
-```
+If the app is already installed and you would like to install a new version, use
+`make app-uninstall` first.
 
-#### Build app
+Push netcfg file:
 
-check app/README.md for detailed instructions
+    make netcfg
 
-```
-cd app
-mvn clean package
-```
+At this point ONOS should have a gRPC connection to all switches, and the demo
+app should have installed the necessary flow rules and groups to get
+connectivity between all hosts.
 
-## 3. Run ONOS
+## 2. Emulate hosts
 
-You have to options to run ONOS: in single-instance local mode (good for
-development) or in cluster mode.
+To create network namespace and bind interfaces to it, modify the `netns.sh`
+script to use interface names on your system.
 
-###  Demo with local ONOS (for development)
+To create network namespaces, use:
 
-#### Start ONOS in local mode
+    ./netns.sh start
 
-```
-ONOS_APPS=gui,drivers,drivers.stratum,drivers.barefoot,generaldeviceprovider,netcfghostprovider,lldpprovider,proxyarp,route-service ok clean debug
-```
+To execute any command inside the network namespace, use:
 
-#### Set packet I/O log level to trace
-```
-log:set TRACE org.onosproject.provider.p4runtime.packet.impl
-log:set TRACE org.onosproject.drivers.p4runtime.P4RuntimePacketProgrammable
-```
+    sudo ip netns exec <ns-name> <command>
 
-#### Load app and netcfg
+To discover hosts in ONOS you can send gratuitous ARPs with the following
+command, to be executed inside a network namespace:
 
-On a second terminal window:
+    arping -c 1 -P -U [Host IP]
 
-```
-cd app/
-onos-app localhost reinstall! target/fabric-demo-1.0-SNAPSHOT.oar
-cd ../demo
-onos-netcfg localhost netcfg.json
-```
+To remove all network namespaces, use:
 
-#### Send gratuitous ARP reply from hosts
+    ./nents.sh stop
 
-To send gratuitous ARP to the switch, use follow command from hosts:
-```
-arping -c 1 -P -U [Host IP]
-```
+## 3. Generate traffic with DPDK pktgen
 
-### Demo with ONOS cluster
+Download and build:
 
-Execute steps 2 in the demo server (bazel-cache).
+ - [DPDK 19.05.0](http://core.dpdk.org/download/)
+ - [pktgen 3.6.5](https://git.dpdk.org/apps/pktgen-dpdk/)
 
-#### Verify cell configuration
+Set the following environment variables to the directories where DPDK and pktgen
+have been extracted: 
 
-We use 3 LXC containers to deploy ONOS. The IP address of each container is
-configured in cell_profile.sh (`OC1`, `OC2`, `OC3`).
+    export DPDK_ROOT=[DPDK dir]
+    export PKTGEN_ROOT=[pktgen dir]
 
-The containers use DHCP, so after rebooting the server you shoulod make sure
-cell_profile.sh has the right addresses.
+### Bind NIC interfaces to DPDK
 
-To verify the address:
-```
-lxc info onos1
-lxc info onos2
-lxc info onos3
-```
+Run this command to get the PCIe device IDs and check the status of attached
+NICs:
+    
+    ./dpdk-dev.sh status
 
-#### Deploy ONOS
+Modify `pktgen.sh` and `dpdk-dev.sh` with the PCIe device IDs you would like to
+use for the demo. The current configuration expects 4x 40G interfaces.
 
-```bash
-source cell_profile.sh
-stc setup
-stc demo-setup.xml
-```
+Use the following command to bind the devices to the DPDK driver:
 
-### Use network namespace to emulate hosts of the topology
+    `./dpdk-dev.sh bind
 
-To create network namespace and bind interface to it, modify the `netns.sh` script to use
-correct network interfaces, we are using these ports for this demo:
-
-```
-ens1f0
-ens1f1
-ens6f0
-ens6f1
-```
-
-To start network namespaces, use `./netns.sh start` to start them.
-
-To attach a network namespace, you can use `sudo ip netns exec [ns name] bash` to run bash shell in
-specific network namespace.
-
-To remove all network namespaces, use `./nents.sh stop` command.
-
-### Use Pktgen with DPDK to generate the traffic
-
-### Requirements
-
- - DPDK: [19.05.0](http://core.dpdk.org/download/)
- - Pktgen: [3.6.5](https://git.dpdk.org/apps/pktgen-dpdk/)
-
-After DPDK and Pktgen build and installed, setup path of DPDK and Pktgen before use `dpdk-dev.sh` and `pktgen.sh` script
-
-```bash
-export DPDK_ROOT=[DPDK dir]
-export PKTGEN_ROOT=[Pktgen dir]
-```
-
-Use `./dpdk-dev.sh status` to check NICs, modify `pktgen.sh` and `dpdk-dev.sh` to use correct PCIe device, here we are using these 4 devices which represent 4 40G QSFP ports:
-
-```
-0000:03:00.0
-0000:03:00.1
-0000:83:00.0
-0000:83:00.1
-```
-
-And use `./dpdk-dev.sh bind` command to bind network interfaces to DPDK driver.
-
-### Start packet generator
+### Start traffic generator
 
 Use `pktgen.sh` to start the pktgen shell with default settings.
 
-You can also cutomize packets to generate by modifying the `pktgen.pkt` file.
+You can also customize the generator by modifying the `pktgen.pkt` file.
 
-To start the traffic on all ports:
+On the pktgen shell, to start traffic on all ports:
 
-```
-pktgen> start 0-3
-```
+    pktgen> start 0-3
 
-If hosts did not detect by the ONOS, run the following command to generate ARPs:
+If hosts are not discovered in ONOS, you can run the following command to
+generate gratuitous ARPs:
 
-```
-pktgen> start 0-3 arp gratuitous
-```
+    pktgen> start 0-3 arp gratuitous
 
-### Stop DPDK and packet generator
+Type `quit` in the pktgen shell to stop traffic and bring down interfaces.
 
-Type `quit` in pktgen shell to stop all traffic and bring down interfaces.
-
-To unbind the DPDK, use `./dpdk-dev.sh unbind` command, which resets the driver for all ports.
+To unbind the NIC interfaces from the DPDK driver, use `./dpdk-dev.sh unbind`.

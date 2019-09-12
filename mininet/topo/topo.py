@@ -59,11 +59,9 @@ class CustomTopo(Topo):
 
         # Spines
         # 50003
-        spine1 = self.addSwitch('spine1', cls=StratumBmv2Switch,
-                                cpuport=CPU_PORT)
+        spine1 = self.addSwitch('spine1', cls=StratumBmv2Switch, cpuport=CPU_PORT)
         # 50004
-        spine2 = self.addSwitch('spine2', cls=StratumBmv2Switch,
-                                cpuport=CPU_PORT)
+        spine2 = self.addSwitch('spine2', cls=StratumBmv2Switch, cpuport=CPU_PORT)
 
         # Switch Links
         self.addLink(spine1, leaf1)

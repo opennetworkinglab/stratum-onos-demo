@@ -14,7 +14,7 @@ services:
       - ./topo:/topo
     entrypoint: "/topo/entrypoint.sh"
   onos:
-    image: onosproject/onos:latest
+    image: onosproject/onos:2.2.0
     depends_on:
       - mininet
     ports:

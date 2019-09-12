@@ -16,11 +16,15 @@ _create_mvn_container:
 		docker create -v ${curr_dir}:/mvn-src -w /mvn-src --name ${mvn_build_container_name} ${maven_img} mvn clean package; \
 	fi
 
-_mvn_package:
+_mvn_package: _copy_p4c_out
 	$(info *** Building ONOS app...)
 	@mkdir -p target
 	@docker start -a -i ${mvn_build_container_name}
 
+_copy_p4c_out:
+	rm -rf src/main/resources/p4c-out
+	cp -r ../p4src/build src/main/resources/p4c-out
+
 clean:
-	docker rm ${mvn_build_container_name} > /dev/null
-	rm -rf target
+	@-docker rm ${mvn_build_container_name} > /dev/null
+	@-rm -rf target
