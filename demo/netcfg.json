@@ -2,11 +2,15 @@
   "devices": {
     "device:leaf1": {
       "basic": {
-        "managementAddress": "grpc://10.128.13.111:28000?device_id=1",
+        "managementAddress": "grpc://10.128.13.232:28000?device_id=1",
         "driver": "stratum-tofino",
         "pipeconf": "org.stratumproject.fabric-demo.montara",
-        "manufacturer": "Inventec Corp.",
-        "hwVersion": "D5254 (BFN Tofino)"
+        "manufacturer": "Edge-Core Networks Corp.",
+        "hwVersion": "Wedge100BF-32X (BFN Tofino)",
+        "swVersion": "stratum_bf",
+        "latitude": "35",
+        "longitude": "-120",
+        "name": "Wedge100BF-32X (Tofino)"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:aa:00:00:00:01",
@@ -15,11 +19,15 @@
     },
     "device:leaf2": {
       "basic": {
-        "managementAddress": "grpc://10.128.13.241:28000?device_id=1",
+        "managementAddress": "grpc://10.128.13.112:28000?device_id=1",
         "driver": "stratum-fpm",
         "pipeconf": "org.stratumproject.fabric-demo.fpm",
-        "manufacturer": "Edge-Core Networks Corp.",
-        "hwVersion": "AS7712-32X (BCM Tomahawk)"
+        "manufacturer": "Quanta Cloud Technology",
+        "hwVersion": "T7032-IX1 (BCM Tomahawk)",
+        "swVersion": "stratum_bcm",
+        "latitude": "35",
+        "longitude": "-107.5",
+        "name": "T7032-IX1 (Tomahawk)"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:aa:00:00:00:02",
@@ -28,27 +36,69 @@
     },
     "device:leaf3": {
       "basic": {
-        "managementAddress": "grpc://10.128.100.92:28000?device_id=1",
+        "managementAddress": "grpc://10.128.13.241:28000?device_id=1",
         "driver": "stratum-fpm",
         "pipeconf": "org.stratumproject.fabric-demo.fpm",
         "manufacturer": "Edge-Core Networks Corp.",
-        "hwVersion": "WEDGE100BF-32X (BFN Tofino)"
+        "hwVersion": "AS7712-32X (BCM Tomahawk)",
+        "swVersion": "stratum_bcm",
+        "latitude": "35",
+        "longitude": "-95",
+        "name": "AS7712-32X (Tomahawk)"
       },
       "fabricDeviceConfig": {
         "myStationMac": "00:aa:00:00:00:03",
         "isSpine": false
       }
     },
-    "device:spine1": {
+    "device:leaf4": {
       "basic": {
-        "managementAddress": "grpc://10.128.13.232:28000?device_id=1",
+        "managementAddress": "grpc://10.128.13.111:28000?device_id=1",
         "driver": "stratum-tofino",
         "pipeconf": "org.stratumproject.fabric-demo.montara",
-        "manufacturer": "Edge-Core Networks Corp.",
-        "hwVersion": "WEDGE100BF-32X (BFN Tofino)"
+        "manufacturer": "Inventec Corp.",
+        "hwVersion": "D5254 (BFN Tofino)",
+        "swVersion": "stratum_bf",
+        "latitude": "35",
+        "longitude": "-82.5",
+        "name": "D5254 (Tofino)"
       },
       "fabricDeviceConfig": {
-        "myStationMac": "00:aa:00:00:01:01",
+        "myStationMac": "00:aa:00:00:00:04",
+        "isSpine": false
+      }
+    },
+    "device:leaf5": {
+      "basic": {
+        "managementAddress": "grpc://10.128.13.113:28000?device_id=1",
+        "driver": "stratum-fpm",
+        "pipeconf": "org.stratumproject.fabric-demo.fpm",
+        "manufacturer": "Dell Inc.",
+        "hwVersion": "Z9100 (BCM Tomahawk)",
+        "swVersion": "stratum_bcm",
+        "latitude": "35",
+        "longitude": "-70",
+        "name": "Z9100 (Tomahawk)"
+      },
+      "fabricDeviceConfig": {
+        "myStationMac": "00:aa:00:00:00:05",
+        "isSpine": false
+      }
+    },
+    "device:spine1": {
+      "basic": {
+        "managementAddress": "grpc://10.128.13.115:28000?device_id=1",
+        "driver": "stratum-fpm",
+        "pipeconf": "org.stratumproject.fabric-demo.fpm",
+        "manufacturer": "Inventec Corp.",
+        "hwVersion": "D7032Q28B (BCM Tomahawk)",
+        "swVersion": "stratum_bcm",
+        "latitude": "40",
+        "longitude": "-105",
+        "name": "D7032Q28B (Tomahawk)"
+      },
+      "fabricDeviceConfig": {
+        "myStationMac": "00:bb:00:00:00:01",
         "isSpine": true
       }
     },
@@ -58,68 +108,123 @@
         "driver": "stratum-tofino",
         "pipeconf": "org.stratumproject.fabric-demo.mavericks",
         "manufacturer": "Delta Electronics, Inc.",
-        "hwVersion": "AG9064v1 (BFN Tofino)"
+        "hwVersion": "AG9064v1 (BFN Tofino)",
+        "swVersion": "stratum_bf",
+        "latitude": "40",
+        "longitude": "-95",
+        "name": "AG9064v1 (Tofino)"
       },
       "fabricDeviceConfig": {
-        "myStationMac": "00:aa:00:00:01:02",
+        "myStationMac": "00:bb:00:00:00:02",
+        "isSpine": true
+      }
+    },
+    "device:spine3": {
+      "basic": {
+        "managementAddress": "grpc://10.128.13.116:28000?device_id=1",
+        "driver": "stratum-tofino",
+        "pipeconf": "org.stratumproject.fabric-demo.mavericks",
+        "manufacturer": "Stordis",
+        "hwVersion": "Stordis (BFN Tofino)",
+        "swVersion": "stratum_bf",
+        "latitude": "40",
+        "longitude": "-85",
+        "name": "Stordis (Tofino)"
+      },
+      "fabricDeviceConfig": {
+        "myStationMac": "00:bb:00:00:00:03",
         "isSpine": true
       }
     }
   },
   "ports": {
-    "device:leaf1/60": {
+    "device:leaf1/152": {
       "interfaces": [
         {
-          "name": "leaf1-60",
-          "ips": ["10.0.1.100/24"]
+          "name": "leaf1-152",
+          "ips": [
+            "10.0.1.100/24"
+          ]
         }
       ]
     },
-    "device:leaf2/58": {
+    "device:leaf2/71": {
       "interfaces": [
         {
-          "name": "leaf2-58",
-          "ips": ["10.0.2.100/24"]
+          "name": "leaf2-71",
+          "ips": [
+            "10.0.2.100/24"
+          ]
         }
       ]
     },
-    "device:leaf2/62": {
+    "device:leaf3/62": {
       "interfaces": [
         {
-          "name": "leaf2-62",
-          "ips": ["10.0.2.100/24"]
+          "name": "leaf3-62",
+          "ips": [
+            "10.0.3.100/24"
+          ]
         }
       ]
     },
-    "device:leaf1/44": {
+    "device:leaf4/60": {
       "interfaces": [
         {
-          "name": "leaf1-44",
-          "ips": ["10.0.3.100/24"]
+          "name": "leaf4-60",
+          "ips": [
+            "10.0.4.100/24"
+          ]
+        }
+      ]
+    },
+    "device:leaf5/62": {
+      "interfaces": [
+        {
+          "name": "leaf5-62",
+          "ips": [
+            "10.0.5.100/24"
+          ]
         }
       ]
     }
   },
   "hosts": {
-    "3c:fd:fe:9d:f1:48/None": {
-      "basic": {
-        "name": "h1"
-      }
-    },
     "3c:fd:fe:9d:f0:38/None": {
       "basic": {
-        "name": "h2"
+        "name": "h1",
+        "latitude": "31",
+        "longitude": "-120"
       }
     },
     "3c:fd:fe:9d:f0:39/None": {
       "basic": {
-        "name": "h3"
+        "name": "h2",
+        "latitude": "31",
+        "longitude": "-107.5"
       }
     },
-    "3c:fd:fe:9d:f1:49/None": {
+    "3c:fd:fe:a6:e7:68/None": {
       "basic": {
-        "name": "h4"
+        "name": "h3",
+        "latitude": "31",
+        "longitude": "-95"
+      }
+    },
+    "3c:fd:fe:a6:e7:69/None": {
+      "basic": {
+        "name": "h4",
+        "latitude": "31",
+        "longitude": "-82.5"
+      }
+    },
+    "2C:60:0C:E7:33:40/None": {
+      "basic": {
+        "name": "Upstream Router",
+        "latitude": "31",
+        "longitude": "-70"
       }
     }
+
   }
 }

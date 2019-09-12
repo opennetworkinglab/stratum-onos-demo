@@ -1,7 +1,7 @@
 description: "Chassis config for leaf 1"
 chassis {
   platform: PLT_P4_SOFT_SWITCH
-  name: "Inventec D5254"
+  name: "Leaf 1 - Wedge100BF"
 }
 nodes {
   id: 1
@@ -9,50 +9,50 @@ nodes {
   index: 1
 }
 singleton_ports {
-  id: 60
-  port: 49
+  id: 128
+  name: "1/0"
+  slot: 1
+  port: 1
+  speed_bps: 100000000000
+  config_params {
+    admin_state: ADMIN_STATE_ENABLED
+    autoneg: TRI_STATE_FALSE
+  }
+  node: 1
+}
+singleton_ports {
+  id: 136
+  name: "2/0"
+  slot: 1
+  port: 2
+  speed_bps: 100000000000
+  config_params {
+    admin_state: ADMIN_STATE_ENABLED
+    autoneg: TRI_STATE_FALSE
+  }
+  node: 1
+}
+singleton_ports {
+  id: 144
+  name: "3/0"
+  slot: 1
+  port: 3
+  speed_bps: 100000000000
+  config_params {
+    admin_state: ADMIN_STATE_ENABLED
+    autoneg: TRI_STATE_FALSE
+  }
+  node: 1
+}
+singleton_ports {
+  id: 152
+  name: "4/0"
+  slot: 1
+  port: 4
   speed_bps: 40000000000
   config_params {
     admin_state: ADMIN_STATE_ENABLED
     autoneg: TRI_STATE_TRUE
   }
   node: 1
-  name: "49/0"
-  slot: 1
-}
-singleton_ports {
-  id: 44
-  port: 50
-  speed_bps: 40000000000
-  config_params {
-    admin_state: ADMIN_STATE_ENABLED
-    autoneg: TRI_STATE_TRUE
-  }
-  node: 1
-  name: "50/0"
-  slot: 1
-}
-singleton_ports {
-  id: 176
-  port: 51
-  speed_bps: 100000000000
-  config_params {
-    admin_state: ADMIN_STATE_ENABLED
-    autoneg: TRI_STATE_TRUE
-  }
-  node: 1
-  name: "51/0"
-  slot: 1
-}
-singleton_ports {
-  id: 160
-  port: 52
-  speed_bps: 100000000000
-  config_params {
-    admin_state: ADMIN_STATE_ENABLED
-    autoneg: TRI_STATE_TRUE
-  }
-  node: 1
-  name: "52/0"
-  slot: 1
 }
