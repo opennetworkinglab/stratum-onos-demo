@@ -68,7 +68,7 @@ import static org.onosproject.net.pi.model.PiPacketOperationType.PACKET_OUT;
 public class InterpreterImpl extends AbstractHandlerBehaviour
         implements PiPipelineInterpreter {
 
-    static final Logger log = LoggerFactory.getLogger(InterpreterImpl.class);
+    private static final Logger log = LoggerFactory.getLogger(InterpreterImpl.class);
 
     // From v1model.p4
     private static final int V1MODEL_PORT_BITWIDTH = 9;
@@ -224,16 +224,13 @@ public class InterpreterImpl extends AbstractHandlerBehaviour
             throws PiInterpreterException {
 
         // Find the ingress_port metadata.
-        // TODO EXERCISE 1: modify metadata names to match P4 program
-        // ---- START SOLUTION ----
         final String inportMetadataName = "ingress_physical_port";
-        // ---- END SOLUTION ----
         Optional<PiPacketMetadata> inportMetadata = packetIn.metadatas()
                 .stream()
                 .filter(meta -> meta.id().id().equals(inportMetadataName))
                 .findFirst();
 
-        if (!inportMetadata.isPresent()) {
+        if (inportMetadata.isEmpty()) {
             throw new PiInterpreterException(format(
                     "Missing metadata '%s' in packet-in received from '%s': %s",
                     inportMetadataName, deviceId, packetIn));

@@ -105,12 +105,6 @@ public class L2BridgingComponent {
         log.info("Stopped");
     }
 
-    //--------------------------------------------------------------------------
-    // METHODS TO COMPLETE.
-    //
-    // Complete the implementation wherever you see TODO.
-    //--------------------------------------------------------------------------
-
     /**
      * Insert flow rules to forward packets to a given host located at the given
      * device and port.
@@ -128,10 +122,8 @@ public class L2BridgingComponent {
         log.info("Adding L2 unicast rule on {} for host {} (port {})...",
                  deviceId, host.id(), port);
 
-        // TODO EXERCISE 2
         // Modify P4Runtime entity names to match content of P4Info file (look
         // for the fully qualified name of tables, match fields, and actions.
-        // ---- START SOLUTION ----
         final String tableId = "ingress.l2_fwd.l2_unicast_table";
         // Match exactly on the host MAC address.
         final MacAddress hostMac = host.mac();
@@ -147,7 +139,6 @@ public class L2BridgingComponent {
                         PiActionParamId.of("port"),
                         port.toLong()))
                 .build();
-        // ---- END SOLUTION ----
 
         // Forge flow rule.
         final FlowRule rule = Utils.buildFlowRule(

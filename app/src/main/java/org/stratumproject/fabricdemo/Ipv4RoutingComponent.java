@@ -159,12 +159,6 @@ public class Ipv4RoutingComponent {
         log.info("Stopped");
     }
 
-    //--------------------------------------------------------------------------
-    // METHODS TO COMPLETE.
-    //
-    // Complete the implementation wherever you see TODO.
-    //--------------------------------------------------------------------------
-
     /**
      * Sets up the "My Station" table for the given device using the
      * myStationMac address found in the config.
@@ -185,10 +179,8 @@ public class Ipv4RoutingComponent {
         // destination* and there is only one action called *NoAction*, which is
         // used as an indication of "table hit" in the control block.
 
-        // TODO EXERCISE 3
         // Modify P4Runtime entity names to match content of P4Info file (look
         // for the fully qualified name of tables, match fields, and actions.
-        // ---- START SOLUTION ----
         final String tableId = "ingress.my_station_table";
 
         final PiCriterion match = PiCriterion.builder()
@@ -202,7 +194,6 @@ public class Ipv4RoutingComponent {
         final PiTableAction action = PiAction.builder()
                 .withId(PiActionId.of("ingress.set_l3_admit"))
                 .build();
-        // ---- END SOLUTION ----
 
         final FlowRule myStationRule = Utils.buildFlowRule(
                 deviceId, appId, tableId, match, action);
@@ -232,10 +223,8 @@ public class Ipv4RoutingComponent {
         final List<PiAction> actions = Lists.newArrayList();
 
         // Build one "set next hop" action for each next hop
-        // TODO EXERCISE 3
         // Modify P4Runtime entity names to match content of P4Info file (look
         // for the fully qualified name of tables, match fields, and actions.
-        // ---- START SOLUTION ----
         final String tableId = "ingress.l3_fwd.l3_fwd_table";
         for (MacAddress nextHopMac : nextHopMacToPorts.keySet()) {
             for (PortNumber port : nextHopMacToPorts.get(nextHopMac)) {
@@ -258,7 +247,6 @@ public class Ipv4RoutingComponent {
                 actions.add(action);
             }
         }
-        // ---- END SOLUTION ----
 
         if (actions.isEmpty()) {
             return null;
@@ -280,10 +268,8 @@ public class Ipv4RoutingComponent {
     private FlowRule createRoutingRule(DeviceId deviceId, Ip4Prefix ipPrefix,
                                        int groupId) {
 
-        // TODO EXERCISE 3
         // Modify P4Runtime entity names to match content of P4Info file (look
         // for the fully qualified name of tables, match fields, and actions.
-        // ---- START SOLUTION ----
         final String tableId = "ingress.l3_fwd.l3_fwd_table";
         final PiCriterion match = PiCriterion.builder()
                 .matchExact(PiMatchFieldId.of("local_metadata.vrf_id"), 0)
@@ -294,7 +280,6 @@ public class Ipv4RoutingComponent {
                 .build();
 
         final PiTableAction action = PiActionProfileGroupId.of(groupId);
-        // ---- END SOLUTION ----
 
         return Utils.buildFlowRule(
                 deviceId, appId, tableId, match, action);
@@ -484,7 +469,7 @@ public class Ipv4RoutingComponent {
         HostId nextHopId = HostId.hostId(route.nextHopMac(), route.nextHopVlan());
         Host nextHop = hostService.getHost(nextHopId);
         if (nextHop == null || nextHop.location() == null) {
-            log.warn("Cannot find next hop %s, ignore it", route.nextHop());
+            log.warn("Cannot find next hop {}, ignore it", route.nextHop());
             return;
         }
         int groupId;
@@ -515,7 +500,7 @@ public class Ipv4RoutingComponent {
         HostId nextHopId = HostId.hostId(route.nextHopMac(), route.nextHopVlan());
         Host nextHop = hostService.getHost(nextHopId);
         if (nextHop == null || nextHop.location() == null) {
-            log.warn("Cannot find next hop %s, ignore it", route.nextHop());
+            log.warn("Cannot find next hop {}, ignore it", route.nextHop());
             return;
         }
         // Find the device mac which connect to the next hop host.

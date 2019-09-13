@@ -1,8 +1,8 @@
 # Mininet-based test network
 
-This directory contains scripts to run a local test network using a
-Docker-based environment with Mininet, the `stratum_bmv2` software switch, and
-ONOS.
+This directory contains scripts to run a local test network using a Docker-based
+environment with Mininet, the `stratum_bmv2` software switch, and ONOS. This is
+a convenient way to test the P4 program and ONOS app used in this demo.
 
 ## Prerequisites
 
