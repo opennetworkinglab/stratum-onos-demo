@@ -223,7 +223,7 @@ public class InterpreterImpl extends AbstractHandlerBehaviour
     public InboundPacket mapInboundPacket(PiPacketOperation packetIn, DeviceId deviceId)
             throws PiInterpreterException {
 
-        // Find the ingress_port metadata.-
+        // Find the ingress_port metadata.
         final String inportMetadataName = "ingress_physical_port";
         Optional<PiPacketMetadata> inportMetadata = packetIn.metadatas()
                 .stream()
