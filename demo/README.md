@@ -75,7 +75,7 @@ use for the demo. The current configuration expects 4x 40G interfaces.
 
 Use the following command to bind the devices to the DPDK driver:
 
-    `./dpdk-dev.sh bind
+    ./dpdk-dev.sh bind
 
 ### Start traffic generator
 
