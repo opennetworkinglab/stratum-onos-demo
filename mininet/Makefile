@@ -36,7 +36,7 @@ netcfg:
 app-reload: app-build app-uninstall app-install
 
 app-build:
-	cd ../app && mvn clean package
+	cd ../app && make build
 
 app-install:
 	${onos_curl} -X POST -HContent-Type:application/octet-stream \

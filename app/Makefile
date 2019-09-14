@@ -23,7 +23,8 @@ _mvn_package: _copy_p4c_out
 
 _copy_p4c_out:
 	rm -rf src/main/resources/p4c-out
-	cp -r ../p4src/build src/main/resources/p4c-out
+	mkdir -p src/main/resources/p4c-out	
+	cp -r ../p4src/build/* src/main/resources/p4c-out
 
 clean:
 	@-docker rm ${mvn_build_container_name} > /dev/null
