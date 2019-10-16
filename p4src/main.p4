@@ -441,11 +441,12 @@ control l3_fwd(inout parsed_packet_t hdr,
     }
 
     action encap_mpls(PortNum port, EthernetAddress smac, EthernetAddress dmac,
-                      bit<20> mpls_label) {
+                      bit<20> mpls_label, bit<8> mpls_ttl) {
         standard_metadata.egress_spec = port;
         hdr.ethernet.src_addr = smac;
         hdr.ethernet.dst_addr = dmac;
         hdr.mpls.label = mpls_label;
+        hdr.mpls.ttl = mpls_ttl;
     }
 
     @max_group_size(8)
@@ -471,8 +472,33 @@ control l3_fwd(inout parsed_packet_t hdr,
         implementation = wcmp_action_profile;
     }
 
+    @max_group_size(8)
+    action_selector(HashAlgorithm.crc16, 32w1024, 32w14) mpls_ecmp_action_profile;
+
+    action swap_mpls_label(PortNum port, EthernetAddress smac, EthernetAddress dmac,
+                          bit<20> mpls_label) {
+        standard_metadata.egress_spec = port;
+        hdr.ethernet.src_addr = smac;
+        hdr.ethernet.dst_addr = dmac;
+        hdr.mpls.label = mpls_label;
+        hdr.mpls.ttl = hdr.mpls.ttl - 1;
+    }
+
+    @switchstack("pipeline_stage: L3_MPLS")
+    table l3_mpls_table {
+        key = {
+            standard_metadata.ingress_port : exact;
+            hdr.mpls.label                 : exact;
+        }
+        actions = {
+            swap_mpls_label;
+        }
+        implementation = mpls_ecmp_action_profile;
+    }
+
     apply {
         l3_fwd_table.apply();
+        l3_mpls_table.apply();
     }
 }
 
