@@ -445,6 +445,7 @@ control l3_fwd(inout parsed_packet_t hdr,
         standard_metadata.egress_spec = port;
         hdr.ethernet.src_addr = smac;
         hdr.ethernet.dst_addr = dmac;
+        hdr.mpls.setValid();
         hdr.mpls.label = mpls_label;
         hdr.mpls.ttl = mpls_ttl;
     }
@@ -475,13 +476,21 @@ control l3_fwd(inout parsed_packet_t hdr,
     @max_group_size(8)
     action_selector(HashAlgorithm.crc16, 32w1024, 32w14) mpls_ecmp_action_profile;
 
-    action swap_mpls_label(PortNum port, EthernetAddress smac, EthernetAddress dmac,
+    action swap_mpls(PortNum port, EthernetAddress smac, EthernetAddress dmac,
                           bit<20> mpls_label) {
         standard_metadata.egress_spec = port;
         hdr.ethernet.src_addr = smac;
         hdr.ethernet.dst_addr = dmac;
         hdr.mpls.label = mpls_label;
         hdr.mpls.ttl = hdr.mpls.ttl - 1;
+    }
+
+    action decap_mpls(PortNum port, EthernetAddress smac, EthernetAddress dmac) {
+        standard_metadata.egress_spec = port;
+        hdr.ethernet.src_addr = smac;
+        hdr.ethernet.dst_addr = dmac;
+        hdr.ipv4_base.ttl = hdr.ipv4_base.ttl - 1;
+        hdr.mpls.setInvalid();
     }
 
     @switchstack("pipeline_stage: L3_MPLS")
@@ -491,14 +500,18 @@ control l3_fwd(inout parsed_packet_t hdr,
             hdr.mpls.label                 : exact;
         }
         actions = {
-            swap_mpls_label;
+            swap_mpls;
+            decap_mpls;
         }
         implementation = mpls_ecmp_action_profile;
     }
 
     apply {
-        l3_fwd_table.apply();
-        l3_mpls_table.apply();
+        if (hdr.ipv4_base.isValid()) {
+            l3_fwd_table.apply();
+        } else if (hdr.mpls.isValid()) {
+            l3_mpls_table.apply();
+        }
     }
 }
 
