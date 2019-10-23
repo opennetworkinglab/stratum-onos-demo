@@ -230,7 +230,13 @@ parser pkt_parser(packet_in pk,
 
     state parse_mpls {
         pk.extract(hdr.mpls);
-        transition accept;
+        // This is a hack to prevent the bf compiler from mapping the mpls ttl
+        // field onto the IP protocol field, which results in corrupted packets.
+        transition select(pk.lookahead<bit<4>>()) {
+            4: parse_ipv4;
+            6: parse_ipv6;
+            default: accept;
+        }
     }
 
     state parse_vlan {
@@ -295,8 +301,8 @@ control pkt_deparser(packet_out b, in parsed_packet_t hdr) {
     apply {
         b.emit(hdr.packet_in);
         b.emit(hdr.ethernet);
-        b.emit(hdr.mpls);
         b.emit(hdr.vlan_tag);
+        b.emit(hdr.mpls);
         b.emit(hdr.ipv4_base);
         b.emit(hdr.ipv6_base);
         b.emit(hdr.arp);
@@ -445,9 +451,13 @@ control l3_fwd(inout parsed_packet_t hdr,
         standard_metadata.egress_spec = port;
         hdr.ethernet.src_addr = smac;
         hdr.ethernet.dst_addr = dmac;
+        hdr.ethernet.ether_type = ETHERTYPE_MPLS;
         hdr.mpls.setValid();
         hdr.mpls.label = mpls_label;
         hdr.mpls.ttl = mpls_ttl;
+        hdr.mpls.bos = 1;
+        hdr.mpls.tc = 0;
+        hdr.ipv4_base.ttl = hdr.ipv4_base.ttl - 1;
     }
 
     @max_group_size(8)
@@ -477,7 +487,7 @@ control l3_fwd(inout parsed_packet_t hdr,
     action_selector(HashAlgorithm.crc16, 32w1024, 32w14) mpls_ecmp_action_profile;
 
     action swap_mpls(PortNum port, EthernetAddress smac, EthernetAddress dmac,
-                          bit<20> mpls_label) {
+                     bit<20> mpls_label) {
         standard_metadata.egress_spec = port;
         hdr.ethernet.src_addr = smac;
         hdr.ethernet.dst_addr = dmac;
@@ -489,7 +499,7 @@ control l3_fwd(inout parsed_packet_t hdr,
         standard_metadata.egress_spec = port;
         hdr.ethernet.src_addr = smac;
         hdr.ethernet.dst_addr = dmac;
-        hdr.ipv4_base.ttl = hdr.ipv4_base.ttl - 1;
+        hdr.ethernet.ether_type = ETHERTYPE_IPV4;
         hdr.mpls.setInvalid();
     }
 
@@ -498,6 +508,8 @@ control l3_fwd(inout parsed_packet_t hdr,
         key = {
             standard_metadata.ingress_port : exact;
             hdr.mpls.label                 : exact;
+            standard_metadata.ingress_port : selector;
+            hdr.mpls.label                 : selector;
         }
         actions = {
             swap_mpls;
