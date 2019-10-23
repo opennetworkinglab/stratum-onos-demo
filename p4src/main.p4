@@ -519,10 +519,10 @@ control l3_fwd(inout parsed_packet_t hdr,
     }
 
     apply {
-        if (hdr.ipv4_base.isValid()) {
-            l3_fwd_table.apply();
-        } else if (hdr.mpls.isValid()) {
+        if (hdr.mpls.isValid()) {
             l3_mpls_table.apply();
+        } else if (hdr.ipv4_base.isValid()) {
+            l3_fwd_table.apply();
         }
     }
 }
